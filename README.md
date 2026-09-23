@@ -92,12 +92,9 @@ lib/
 
 ## 6. Screenshots
 
-```markdown
-| Home | Add Aquarium |
-| --- | --- | --- |
-| ![Home](docs/assets/HOME-Dashboard.png) |
-```
-- Parameters, Care, and Aquarium Details are still placeholder screens in development
+![Home Dashboard](docs/assets/HOME-Dashboard.png)
+
+- Parameters, Care, and Aquarium Details are still placeholder screens in development.
 
 ## 7. Known issues and next steps
 
@@ -112,4 +109,7 @@ Planned next steps:
 3. Build care task management and maintenance records.
 4. Connect dashboard summaries to app data.
 5. Add and document screenshots, demo details, and project author information.
+
+
+
 
