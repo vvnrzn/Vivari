@@ -92,7 +92,7 @@ lib/
 
 ## 6. Screenshots
 
-![Home Dashboard](docs/assets/HOME-Dashboard.png)
+![Home Dashboard](docs/assets/HOME-Dashboard.PNG)
 
 - Parameters, Care, and Aquarium Details are still placeholder screens in development.
 
