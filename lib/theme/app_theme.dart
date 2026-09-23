@@ -149,12 +149,9 @@ abstract final class VivariTheme {
             size: 20,
           );
         }),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final isSelected = states.contains(WidgetState.selected);
+        labelTextStyle: WidgetStateProperty.resolveWith((_) {
           return GoogleFonts.dmSans(
-            color: isSelected
-                ? VivariColors.background
-                : VivariColors.textMuted,
+            color: VivariColors.textMuted,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           );
