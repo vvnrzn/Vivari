@@ -10,18 +10,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:final_project/main.dart';
 
 void main() {
-  testWidgets('home screen shows its title and counts taps', (tester) async {
-    // Build the app. Note we build MyApp directly, not the DevicePreview
-    // wrapper, because a test does not need the phone frame.
+  testWidgets('home dashboard starts with empty states', (tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('It works'), findsOneWidget);
-    expect(find.text('Taps: 0'), findsOneWidget);
+    expect(find.text('Vivari'), findsOneWidget);
+    expect(find.text('Total Aquariums'), findsOneWidget);
 
-    // Tap the button, then let the widget rebuild.
-    await tester.tap(find.byType(FilledButton));
+    await tester.drag(find.byType(Scrollable), const Offset(0, -500));
     await tester.pump();
 
-    expect(find.text('Taps: 1'), findsOneWidget);
+    expect(find.text('No aquariums yet'), findsOneWidget);
+    expect(find.text('No tasks for today'), findsOneWidget);
   });
 }

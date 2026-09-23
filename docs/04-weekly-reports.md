@@ -8,7 +8,7 @@ Copy this block:
 
 ---
 
-## Week N (date to date)
+## Week 1 (September 16 to September 23)
 
 **Done this week**
 -
@@ -28,3 +28,26 @@ Copy this block:
 -
 
 ---
+
+
+## Week 2 (September 24 to September 27)
+
+**Done this week**
+-
+
+**In progress**
+-
+
+**Blocked or stuck on**
+-
+
+**Decisions made, and why**
+-
+
+**Hours spent, roughly:**
+
+**Next week I will:**
+-
+
+---
+
