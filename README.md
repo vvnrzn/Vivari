@@ -1,119 +1,115 @@
-<!--
-  This is your project's front page. Replace every placeholder below.
-  It is the first thing your instructor and any future employer will read, and
-  the live link in it is how your project gets opened for grading.
+## 1. Overview
 
-  New here? Read START-HERE.md first. Delete this comment when you are done.
--->
+- Vivari is a Flutter-based aquarium care app designed to help aquarium owners keep track of their aquariums, water parameters, and care tasks. 
+- Live Demo: https://vvnrzn.github.io/Vivari/
 
-# App Name
+## 2. Setup and installation
 
-> One sentence: what this app does, and who it is for.
+The specific SDK versions used to build the app are **Flutter 3.47.2** and **Dart 3.13.2**.
 
-**Live demo:** https://YOURUSERNAME.github.io/YOUR-REPO/ <!-- GitHub Pages is set up already; replace if you host elsewhere -->
-**Demo video:** `docs/demo.mp4` (link it here once it exists)
-**Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
-**Author:** Your Name
+To run the project:
 
-This repository lives in the author's own GitHub account and is public on
-purpose. There is no `student.json` here and there should not be one: see
-`docs/06-security-and-privacy.md` for what a public repo means for secrets and
-personal data.
-
----
-
-## Screenshots
-
-Put two or three real screenshots at phone size in `docs/assets/`, then replace
-this paragraph with them:
-
-```markdown
-| Home | Detail | Add |
-| --- | --- | --- |
-| ![Home](docs/assets/screen-home.png) | ![Detail](docs/assets/screen-detail.png) | ![Add](docs/assets/screen-add.png) |
-```
-
-A repo without screenshots reads as abandoned, whatever the code says.
-
-## What it does
-
-Three to five bullets. What can a user actually do?
-
-- ...
-- ...
-- ...
-
-## Built with
-
-| | |
-| --- | --- |
-| Framework | Flutter (Dart) |
-| State | `setState` / provider / riverpod (say which) |
-| Storage | shared_preferences / Hive / Drift / Firebase / Supabase / other |
-| Other packages | list the ones that matter, with a word on why |
-
-## Running it yourself
+1. Install Flutter and ensure the Flutter toolchain is on your `PATH`.
+2. Clone the repository and open its folder in VS Code or a terminal.
+3. Install the project dependencies:
 
 ```bash
 flutter pub get
-cp .env.example .env      # only if your app needs keys, see below
-flutter run -d web-server --web-port 8080
 ```
 
-Then open http://localhost:8080. Requires Flutter (run `flutter --version` and
-put yours here).
+4. Check that Flutter can detect a connected device or emulator:
 
-### Environment variables
+```bash
+flutter devices
+```
 
-This project reads its configuration from a `.env` file that is **not** in the
-repository. Copy `.env.example`, fill in your own values, and never commit the
-result.
+## 3. How to run it
 
-| Variable | What it is | Where to get one |
+Start the app with:
+
+```bash
+flutter run
+```
+
+For a browser preview:
+
+```bash
+flutter run -d chrome
+```
+
+The app opens to the **Home Dashboard**. Its bottom navigation provides access to **Parameters** and **Care**, which are still placeholders.
+
+## 4. Features and usage
+
+### Home
+
+* View total aquariums, inhabitants, tasks due today, parameter alerts, last water change, and last dosing.
+* Browse aquarium cards and select an aquarium to view its details.
+* Use **+ Add Aquarium** to create a new aquarium.
+* Select **Tasks Due Today** or **Parameter Alerts** to quickly open Care or Parameters.
+
+### Aquarium Details
+
+* View aquarium information, tasks needing attention, and inhabitants.
+* Edit aquarium details or add and manage inhabitants.
+* Use **+ Add Inhabitant** to add fish, invertebrates, plants, or corals.
+
+### Parameters
+
+* Switch between aquariums and view water-quality parameters.
+* Monitor temperature, ammonia, nitrite, nitrate, pH, salinity, and other enabled parameters.
+* Use **+ Add** to record measurements and quickly switch between parameters.
+* Open a parameter to view its graph, status, average, and recommended range.
+* Use Parameter Settings to manage visible parameters and recommended values.
+
+### Care
+
+* View maintenance tasks through List, Week, Calendar, or History.
+* Filter tasks by aquarium and review overdue, due today, and upcoming tasks.
+* Use **+ Add** to create a single or recurring task and assign it to one or more aquariums.
+* View completed tasks through History.
+
+
+## 5. Project structure
+
+```text
+lib/
+├── main.dart
+├── screens/
+│   ├── home_dashboard.dart
+│   ├── aquarium_details_screen.dart
+│   ├── parameters_screen.dart
+│   ├── care_screen.dart
+│   └── placeholder_screen.dart
+├── theme/
+│   └── app_theme.dart
+└── widgets/
+    ├── empty_state.dart
+    ├── summary_card.dart
+    ├── vivari_bottom_navigation.dart
+    └── vivari_card.dart
+```
+
+## 6. Screenshots
+
+```markdown
+| Home | Add Aquarium |
 | --- | --- | --- |
-| `EXAMPLE_API_KEY` | ... | ... |
+| ![Home](docs/assets/HOME-Dashboard.png) |
+```
+- Parameters, Care, and Aquarium Details are still placeholder screens in development
 
-## Privacy and secrets
+## 7. Known issues and next steps
 
-Required section. Two or three honest sentences:
+Current limitations:
+- Aquarium, inhabitant, task, water change, and dosing information is not connected to stored app data. The dashboard currently shows zero counts and empty-state messages.
+- Parameters, Care, and Aquarium Details are placeholders.
+- “Add Aquarium” opens a temporary placeholder instead of an aquarium creation form.
+- The app does not currently include a data persistence workflow.
+Planned next steps:
+1. Build the aquarium creation and details workflow.
+2. Implement water parameter tracking.
+3. Build care task management and maintenance records.
+4. Connect dashboard summaries to app data.
+5. Add and document screenshots, demo details, and project author information.
 
-- What personal data this app stores, if any, and where it goes.
-- Where the secrets live (`.env` locally, repository secrets in the deploy
-  workflow) and what protects the data on the service side (Firestore rules,
-  Supabase RLS, or "nothing leaves the device").
-- Confirm that all sample data, screenshots and the video contain **no real
-  personal information**.
-
-## Project documentation
-
-| Document | |
-| --- | --- |
-| [Proposal](docs/01-proposal.md) | the problem, the users, the scope |
-| [Mockup and wireframes](docs/02-mockup.md) | what it looks like, and the screen flow |
-| [Design system](docs/03-design-system.md) | colors, type, spacing, components |
-| [Weekly reports](docs/04-weekly-reports.md) | what happened each week |
-| [Demo video](docs/05-demo-video.md) | the recording and what it shows |
-| [Start here](START-HERE.md) | how this repo works (delete once you have read it) |
-| [Security and privacy](docs/06-security-and-privacy.md) | the checklist, filled in |
-
-## Status and what is next
-
-Be honest. What works, what is half done, what you would build next. An honest
-"known issues" section reads better than a claim the reader disproves in thirty
-seconds.
-
-## Credits
-
-- Packages: see `pubspec.yaml`
-- Assets, icons, 3D models, sounds: name the author and the licence for each
-- People who helped, and how
-
-## AI use
-
-If you used AI tools while building this, say so in a sentence or two and say
-where. Honest disclosure is the standard in this course and increasingly outside
-it.
-
-## Licence
-
-MIT, see [LICENSE](LICENSE). Change it if you want different terms.
