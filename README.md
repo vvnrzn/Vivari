@@ -1,6 +1,6 @@
 ## 1. Overview
 
-- Vivari (Derived from vivariuM; Latin for "place of life") is an aquarium care app designed to help aquarium owners keep track of their aquariums, water parameters, and care tasks. 
+- Vivari (Derived from vivarium ; Latin for "place of life") is an aquarium care app designed to help aquarium owners keep track of their aquariums, water parameters, and care tasks. 
 - Live Demo: https://vvnrzn.github.io/Vivari/
 
 ## 2. Setup and installation
