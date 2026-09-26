@@ -1,0 +1,343 @@
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../models/aquarium.dart';
+import '../theme/app_theme.dart';
+
+class AddAquariumScreen extends StatefulWidget {
+  const AddAquariumScreen({super.key});
+
+  @override
+  State<AddAquariumScreen> createState() => _AddAquariumScreenState();
+}
+
+class _AddAquariumScreenState extends State<AddAquariumScreen> {
+  final _nameController = TextEditingController();
+  final _volumeController = TextEditingController();
+  AquariumType? _type;
+  String _volumeUnit = 'gal';
+  DateTime _createdAt = DateTime.now();
+  XFile? _photo;
+  Future<Uint8List>? _photoBytes;
+
+  bool get _canCreate {
+    final name = _nameController.text.trim();
+    final volume = double.tryParse(_volumeController.text.trim());
+    return name.isNotEmpty && _type != null && volume != null && volume > 0;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _volumeController.dispose();
+    super.dispose();
+  }
+
+  void _createAquarium() {
+    final volume = double.parse(_volumeController.text.trim());
+    Navigator.of(context).pop(
+      Aquarium(
+        name: _nameController.text.trim(),
+        type: _type!,
+        volume: volume,
+        volumeUnit: _volumeUnit,
+        createdAt: _createdAt,
+        photoPath: _photo?.path,
+      ),
+    );
+  }
+
+  Future<void> _selectPhoto() async {
+    try {
+      final photo = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (photo != null && mounted) {
+        setState(() {
+          _photo = photo;
+          _photoBytes = photo.readAsBytes();
+        });
+      }
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to open photos: ${error.message}')),
+      );
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final today = DateTime.now();
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: _createdAt,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(today.year + 1),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: VivariColors.primary,
+            surface: VivariColors.surface,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (selectedDate != null && mounted) {
+      setState(() => _createdAt = selectedDate);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add Aquarium'),
+        actions: [
+          TextButton(
+            onPressed: _canCreate ? _createAquarium : null,
+            style: TextButton.styleFrom(
+              foregroundColor: _canCreate
+                  ? VivariColors.primary
+                  : VivariColors.textMuted,
+            ),
+            child: const Text('Create'),
+          ),
+          const SizedBox(width: AppSpacing.small),
+        ],
+      ),
+      body: Form(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.small,
+            AppSpacing.screen,
+            AppSpacing.large,
+          ),
+          children: [
+            _FieldLabel('Aquarium Name'),
+            const SizedBox(height: AppSpacing.small),
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: _inputDecoration('e.g. Betta tank'),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: AppSpacing.large),
+            _FieldLabel('Type'),
+            const SizedBox(height: AppSpacing.small),
+            Row(
+              children: [
+                for (final type in AquariumType.values) ...[
+                  if (type != AquariumType.values.first)
+                    const SizedBox(width: AppSpacing.small),
+                  Expanded(
+                    child: _AquariumTypeButton(
+                      type: type,
+                      selected: _type == type,
+                      onPressed: () => setState(() => _type = type),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.large),
+            _FieldLabel('Volume'),
+            const SizedBox(height: AppSpacing.small),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _volumeController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                    ],
+                    decoration: _inputDecoration('Enter volume'),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.small),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'gal', label: Text('gal')),
+                    ButtonSegment(value: 'L', label: Text('L')),
+                  ],
+                  selected: {_volumeUnit},
+                  onSelectionChanged: (selected) =>
+                      setState(() => _volumeUnit = selected.first),
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(
+                    foregroundColor: VivariColors.textMuted,
+                    selectedForegroundColor: VivariColors.background,
+                    selectedBackgroundColor: VivariColors.primary,
+                    side: const BorderSide(color: VivariColors.border),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.large),
+            _FieldLabel('Aquarium photo (optional)'),
+            const SizedBox(height: AppSpacing.small),
+            _PhotoPicker(
+              photo: _photo,
+              photoBytes: _photoBytes,
+              onPressed: _selectPhoto,
+            ),
+            const SizedBox(height: AppSpacing.large),
+            _FieldLabel('Creation date'),
+            const SizedBox(height: AppSpacing.small),
+            OutlinedButton.icon(
+              onPressed: _selectDate,
+              icon: const Icon(Icons.calendar_today_outlined),
+              label: Text(_formatDate(_createdAt)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VivariColors.textPrimary,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.medium,
+                  vertical: 18,
+                ),
+                side: const BorderSide(color: VivariColors.border),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) => InputDecoration(
+    hintText: hint,
+    filled: true,
+    fillColor: VivariColors.surface,
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.medium,
+      vertical: 18,
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: VivariColors.border),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: VivariColors.border),
+    ),
+  );
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, style: Theme.of(context).textTheme.titleMedium);
+  }
+}
+
+class _AquariumTypeButton extends StatelessWidget {
+  const _AquariumTypeButton({
+    required this.type,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final AquariumType type;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: selected
+            ? VivariColors.background
+            : VivariColors.textPrimary,
+        backgroundColor: selected ? VivariColors.primary : VivariColors.surface,
+        minimumSize: const Size(0, 56),
+        side: BorderSide(
+          color: selected ? VivariColors.primary : VivariColors.border,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: Text(type.label),
+    );
+  }
+}
+
+class _PhotoPicker extends StatelessWidget {
+  const _PhotoPicker({
+    required this.photo,
+    required this.photoBytes,
+    required this.onPressed,
+  });
+
+  final XFile? photo;
+  final Future<Uint8List>? photoBytes;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 132,
+        decoration: BoxDecoration(
+          color: VivariColors.surface,
+          border: Border.all(color: VivariColors.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: photo == null
+            ? const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined, size: 28),
+                  SizedBox(height: AppSpacing.small),
+                  Text('Add photo'),
+                ],
+              )
+            : FutureBuilder<Uint8List>(
+                future: photoBytes,
+                builder: (context, snapshot) => Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (snapshot.hasData)
+                      Image.memory(snapshot.data!, fit: BoxFit.cover)
+                    else if (snapshot.hasError)
+                      const Center(
+                        child: Text(
+                          'Could not load photo',
+                          style: TextStyle(color: VivariColors.textMuted),
+                        ),
+                      )
+                    else
+                      const Center(child: CircularProgressIndicator()),
+                    const Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSpacing.small),
+                        child: Icon(Icons.edit, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+String _formatDate(DateTime date) =>
+    '${date.day.toString().padLeft(2, '0')}/'
+    '${date.month.toString().padLeft(2, '0')}/${date.year}';

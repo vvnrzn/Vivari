@@ -1,25 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../models/aquarium.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/vivari_card.dart';
-import 'placeholder_screen.dart';
+import 'add_aquarium_screen.dart';
+import 'aquarium_details_screen.dart';
 
-class HomeDashboard extends StatelessWidget {
+class HomeDashboard extends StatefulWidget {
   const HomeDashboard({required this.onSelectTab, super.key});
 
   final ValueChanged<int> onSelectTab;
 
-  void _openPlaceholder(BuildContext context, String title) {
-    Navigator.push(
+  @override
+  State<HomeDashboard> createState() => _HomeDashboardState();
+}
+
+class _HomeDashboardState extends State<HomeDashboard> {
+  final List<Aquarium> _aquariums = [];
+
+  Future<void> _addAquarium(BuildContext context) async {
+    final aquarium = await Navigator.push<Aquarium>(
       context,
-      MaterialPageRoute<void>(builder: (_) => PlaceholderScreen(title: title)),
+      MaterialPageRoute<Aquarium>(builder: (_) => const AddAquariumScreen()),
+    );
+    if (aquarium != null && mounted) {
+      setState(() => _aquariums.add(aquarium));
+    }
+  }
+
+  void _openAquarium(BuildContext context, Aquarium aquarium) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => AquariumDetailsScreen(aquarium: aquarium),
+      ),
     );
   }
 
   void _openCare(BuildContext context) {
-    onSelectTab(2);
+    widget.onSelectTab(2);
   }
 
   @override
@@ -36,8 +58,11 @@ class HomeDashboard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
-                child: SummaryCard(label: 'Total Aquariums', value: '0'),
+              Expanded(
+                child: SummaryCard(
+                  label: 'Total Aquariums',
+                  value: '${_aquariums.length}',
+                ),
               ),
               const SizedBox(width: AppSpacing.medium),
               const Expanded(
@@ -119,23 +144,167 @@ class HomeDashboard extends StatelessWidget {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => _openPlaceholder(context, 'Add Aquarium'),
+                onPressed: () => _addAquarium(context),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Aquarium'),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.small),
-          const EmptyState(
-            title: 'No aquariums yet',
-            message: 'Add your first aquarium to get started.',
-            icon: Icons.water_outlined,
-          ),
+          if (_aquariums.isEmpty)
+            const EmptyState(
+              title: 'No aquariums yet',
+              message: 'Add your first aquarium to get started.',
+              icon: Icons.water_outlined,
+            )
+          else
+            ..._aquariums.map(
+              (aquarium) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.small),
+                child: _AquariumCard(
+                  aquarium: aquarium,
+                  onTap: () => _openAquarium(context, aquarium),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
+
+  class _AquariumCard extends StatelessWidget {
+    const _AquariumCard({required this.aquarium, required this.onTap});
+
+    final Aquarium aquarium;
+    final VoidCallback onTap;
+
+    @override
+    Widget build(BuildContext context) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: VivariCard(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      aquarium.name,
+                      style: GoogleFonts.spaceGrotesk(
+                        color: VivariColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.medium),
+                    Wrap(
+                      spacing: AppSpacing.medium,
+                      runSpacing: AppSpacing.small,
+                      children: [
+                        _AquariumMetadata(
+                          icon: Icons.schedule,
+                          label: '${_ageSince(aquarium.createdAt)} ago',
+                        ),
+                        _AquariumMetadata(
+                          icon: Icons.waves_outlined,
+                          label:
+                              '${_formatVolume(aquarium.volume)} ${aquarium.volumeUnit}',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.small),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _Badge(
+                    label: aquarium.type.label,
+                    color: VivariColors.primary,
+                  ),
+                  if (aquarium.pendingTasks > 0) ...[
+                    const SizedBox(height: AppSpacing.small),
+                    _Badge(
+                      label: '${aquarium.pendingTasks} pending',
+                      color: VivariColors.warning,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  class _AquariumMetadata extends StatelessWidget {
+    const _AquariumMetadata({required this.icon, required this.label});
+
+    final IconData icon;
+    final String label;
+
+    @override
+    Widget build(BuildContext context) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14),
+          const SizedBox(width: 4),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      );
+    }
+  }
+
+  class _Badge extends StatelessWidget {
+    const _Badge({required this.label, required this.color});
+
+    final String label;
+    final Color color;
+
+    @override
+    Widget build(BuildContext context) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+  }
+
+  String _formatVolume(double volume) =>
+      volume == volume.roundToDouble()
+          ? volume.toInt().toString()
+          : volume.toString();
+
+  String _ageSince(DateTime date) {
+    final now = DateTime.now();
+    final days = now.difference(date).inDays;
+    if (days >= 365) {
+      final years = days ~/ 365;
+      return '${years}y';
+    }
+    if (days >= 30) {
+      final months = days ~/ 30;
+      return '${months}mo';
+    }
+    return '${days < 0 ? 0 : days}d';
+  }
 
 class _SummaryValue extends StatelessWidget {
   const _SummaryValue({required this.label, required this.value});
