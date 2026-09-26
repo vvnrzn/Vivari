@@ -18,17 +18,65 @@ At least six entries. One per real use. Every entry needs a commit link.
 - **What I kept, what I changed, and why:** Reworked the Home Dashboard by removing the Settings and Notifications buttons and extra heading, then arranging the summaries into a two-column aquarium and inhabitant row, a tappable Tasks Due Today card that opens Care, and a split card for the latest water change and dosing. All data remains empty, while the Add Aquarium button and bottom navigation remain functional.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f
 
+### -- 
+- **Tool:** 
+- **What I asked for:**
+- **What it gave back:** 
+- **What I kept, what I changed, and why:** 
+- **Commit:** 
+
+### -- 
+- **Tool:** 
+- **What I asked for:**
+- **What it gave back:** 
+- **What I kept, what I changed, and why:** 
+- **Commit:** 
+
+### -- 
+- **Tool:** 
+- **What I asked for:**
+- **What it gave back:** 
+- **What I kept, what I changed, and why:** 
+- **Commit:** 
+
+### -- 
+- **Tool:** 
+- **What I asked for:**
+- **What it gave back:** 
+- **What I kept, what I changed, and why:** 
+- **Commit:** 
+
+### -- 
+- **Tool:** 
+- **What I asked for:**
+- **What it gave back:** 
+- **What I kept, what I changed, and why:** 
+- **Commit:** 
+
 ## 2. Where the AI got it wrong
 
 Three cases. Be specific. If you write that the AI was never wrong, this section
 scores zero.
 
-### Case 1 - short title
+### Case 1 - Care screen layout overflow
 
-- **What it gave me:**
-- **What was wrong with it:**
-- **What I did instead:**
+- **What it gave me:** Copilot generated a Care screen with multiple views, but the layout displayed them incorrectly: one view was squeezed and part of the Week view peeked in from the right. The screen also produced vertical RenderFlex overflow errors, with content extending beyond the available space.
+- **What was wrong with it:** The Care screen’s layout did not fit the available space. One view was squeezed, while part of the Week view appeared at the right edge. The fixed vertical layout also overflowed the screen, making content extend beyond the visible area and triggering several RenderFlex overflow errors.
+- **What I did instead:** I would simplify the layout so only the selected view is shown at a time, check that the view switcher fits within the screen width, and make the care content scrollable. I would then run the screen at different device sizes and confirm that all views display without overflow.
 - **Commit:** https://github.com/YOUR-USERNAME/YOUR-REPO/commit/SHA
+
+### Case 2 -
+
+- **What it gave me:** 
+- **What was wrong with it:** 
+- **What I did instead:** 
+
+### Case 3 -
+
+- **What it gave me:** 
+- **What was wrong with it:** 
+- **What I did instead:** 
+
 
 ## 3. Who wrote what
 
