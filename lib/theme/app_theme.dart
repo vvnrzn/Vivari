@@ -133,30 +133,6 @@ abstract final class VivariTheme {
           fontWeight: FontWeight.w700,
         ),
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: VivariColors.surface,
-        indicatorColor: VivariColors.primary,
-        height: 68,
-        indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final isSelected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            color: isSelected
-                ? VivariColors.background
-                : VivariColors.textMuted,
-            size: 20,
-          );
-        }),
-        labelTextStyle: WidgetStateProperty.resolveWith((_) {
-          return GoogleFonts.dmSans(
-            color: VivariColors.textMuted,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          );
-        }),
-      ),
     );
   }
 }

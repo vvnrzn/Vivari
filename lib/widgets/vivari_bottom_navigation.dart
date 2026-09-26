@@ -20,86 +20,115 @@ class VivariBottomNavigation extends StatelessWidget {
         border: Border.all(color: VivariColors.border),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.small),
-        child: NavigationBar(
-          selectedIndex: currentIndex,
-          onDestinationSelected: onDestinationSelected,
-          destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.water_drop_outlined),
-              selectedIcon: Icon(Icons.water_drop),
-              label: 'Parameters',
-            ),
-            const NavigationDestination(
-              icon: _FishbowlIcon(),
-              selectedIcon: _FishbowlIcon(),
-              label: 'Home',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.checklist_outlined),
-              selectedIcon: Icon(Icons.checklist),
-              label: 'Care',
-            ),
-          ],
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.small,
+            vertical: AppSpacing.small,
+          ),
+          child: Row(
+            children: [
+              _NavigationItem(
+                icon: Icons.water_drop_outlined,
+                selectedIcon: Icons.water_drop,
+                label: 'Parameters',
+                selected: currentIndex == 0,
+                onPressed: () => onDestinationSelected(0),
+              ),
+              _NavigationItem(
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home_rounded,
+                label: 'Home',
+                selected: currentIndex == 1,
+                onPressed: () => onDestinationSelected(1),
+              ),
+              _NavigationItem(
+                icon: Icons.checklist_outlined,
+                selectedIcon: Icons.checklist,
+                label: 'Care',
+                selected: currentIndex == 2,
+                onPressed: () => onDestinationSelected(2),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _FishbowlIcon extends StatelessWidget {
-  const _FishbowlIcon();
+class _NavigationItem extends StatelessWidget {
+  const _NavigationItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(20, 20),
-      painter: _FishbowlPainter(
-        IconTheme.of(context).color ?? VivariColors.textMuted,
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(18),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.small,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: selected ? VivariColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedScale(
+                    scale: selected ? 1.12 : 1,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      selected ? selectedIcon : icon,
+                      color: selected
+                          ? VivariColors.background
+                          : VivariColors.textMuted,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: selected
+                          ? VivariColors.background
+                          : VivariColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
-}
-
-class _FishbowlPainter extends CustomPainter {
-  const _FishbowlPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-    final bowl = Path()
-      ..moveTo(3, 7)
-      ..lineTo(17, 7)
-      ..lineTo(15.5, 15)
-      ..quadraticBezierTo(10, 19, 4.5, 15)
-      ..close();
-    canvas.drawPath(bowl, paint);
-    canvas.drawLine(const Offset(4, 5), const Offset(16, 5), paint);
-
-    final fish = Path()
-      ..moveTo(7, 11)
-      ..quadraticBezierTo(10, 8.5, 13, 11)
-      ..quadraticBezierTo(10, 13.5, 7, 11)
-      ..moveTo(7, 11)
-      ..lineTo(5.5, 9.5)
-      ..moveTo(7, 11)
-      ..lineTo(5.5, 12.5);
-    canvas.drawPath(fish, paint);
-    canvas.drawCircle(
-      const Offset(11.2, 10.5),
-      0.6,
-      paint..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_FishbowlPainter oldDelegate) =>
-      oldDelegate.color != color;
 }

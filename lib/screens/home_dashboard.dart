@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/summary_card.dart';
-import '../widgets/vivari_bottom_navigation.dart';
 import '../widgets/vivari_card.dart';
-import 'care_screen.dart';
-import 'parameters_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeDashboard extends StatelessWidget {
-  const HomeDashboard({super.key});
+  const HomeDashboard({required this.onSelectTab, super.key});
+
+  final ValueChanged<int> onSelectTab;
 
   void _openPlaceholder(BuildContext context, String title) {
     Navigator.push(
@@ -20,17 +19,7 @@ class HomeDashboard extends StatelessWidget {
   }
 
   void _openCare(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(builder: (_) => const CareScreen()),
-    );
-  }
-
-  void _openParameters(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(builder: (_) => const ParametersScreen()),
-    );
+    onSelectTab(2);
   }
 
   @override
@@ -130,7 +119,7 @@ class HomeDashboard extends StatelessWidget {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => _openPlaceholder(context, 'Add/Edit Aquarium'),
+                onPressed: () => _openPlaceholder(context, 'Add Aquarium'),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Aquarium'),
               ),
@@ -143,16 +132,6 @@ class HomeDashboard extends StatelessWidget {
             icon: Icons.water_outlined,
           ),
         ],
-      ),
-      bottomNavigationBar: VivariBottomNavigation(
-        currentIndex: 1,
-        onDestinationSelected: (index) {
-          if (index == 0) {
-            _openParameters(context);
-          } else if (index == 2) {
-            _openCare(context);
-          }
-        },
       ),
     );
   }
