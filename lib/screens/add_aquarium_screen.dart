@@ -36,8 +36,10 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
     super.dispose();
   }
 
-  void _createAquarium() {
+  Future<void> _createAquarium() async {
     final volume = double.parse(_volumeController.text.trim());
+    final photoBytes = await _photo?.readAsBytes();
+    if (!mounted) return;
     Navigator.of(context).pop(
       Aquarium(
         name: _nameController.text.trim(),
@@ -45,7 +47,7 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
         volume: volume,
         volumeUnit: _volumeUnit,
         createdAt: _createdAt,
-        photoPath: _photo?.path,
+        photoBytes: photoBytes,
       ),
     );
   }
@@ -161,20 +163,21 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.small),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'gal', label: Text('gal')),
-                    ButtonSegment(value: 'L', label: Text('L')),
-                  ],
-                  selected: {_volumeUnit},
-                  onSelectionChanged: (selected) =>
-                      setState(() => _volumeUnit = selected.first),
-                  showSelectedIcon: false,
-                  style: SegmentedButton.styleFrom(
-                    foregroundColor: VivariColors.textMuted,
-                    selectedForegroundColor: VivariColors.background,
-                    selectedBackgroundColor: VivariColors.primary,
-                    side: const BorderSide(color: VivariColors.border),
+                Expanded(
+                  child: Row(
+                    children: [
+                      for (final unit in ['gal', 'L']) ...[
+                        if (unit != 'gal')
+                          const SizedBox(width: AppSpacing.small),
+                        Expanded(
+                          child: _VolumeUnitButton(
+                            unit: unit,
+                            selected: _volumeUnit == unit,
+                            onPressed: () => setState(() => _volumeUnit = unit),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -215,6 +218,9 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
 
   InputDecoration _inputDecoration(String hint) => InputDecoration(
     hintText: hint,
+    hintStyle: Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: VivariColors.textMuted),
     filled: true,
     fillColor: VivariColors.surface,
     contentPadding: const EdgeInsets.symmetric(
@@ -270,6 +276,38 @@ class _AquariumTypeButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Text(type.label),
+    );
+  }
+}
+
+class _VolumeUnitButton extends StatelessWidget {
+  const _VolumeUnitButton({
+    required this.unit,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final String unit;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: selected
+            ? VivariColors.background
+            : VivariColors.textPrimary,
+        backgroundColor: selected ? VivariColors.primary : VivariColors.surface,
+        minimumSize: const Size(0, 56),
+        padding: EdgeInsets.zero,
+        side: BorderSide(
+          color: selected ? VivariColors.primary : VivariColors.border,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: Text(unit),
     );
   }
 }

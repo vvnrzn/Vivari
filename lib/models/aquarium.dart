@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 enum AquariumType {
   freshwater('Freshwater'),
   saltwater('Saltwater');
@@ -14,7 +16,7 @@ class Aquarium {
     required this.volume,
     required this.volumeUnit,
     required this.createdAt,
-    this.photoPath,
+    this.photoBytes,
     this.pendingTasks = 0,
   });
 
@@ -23,6 +25,6 @@ class Aquarium {
   final double volume;
   final String volumeUnit;
   final DateTime createdAt;
-  final String? photoPath;
+  final Uint8List? photoBytes;
   final int pendingTasks;
 }
