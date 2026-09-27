@@ -103,7 +103,7 @@ lib/
 
 | HOME DASHBOARD | ADD AQUARIUM | CARE |
 | --- | --- | --- |
-| ![HOME](docs/assets/HOME-Dashboard.PNG) | ![Add Aquarium](docs/assets/Add-aquarium.PNG) | ![CARE](docs/assets/CARE.PNG) |
+| ![HOME](docs/assets/HOME-Dashboard.PNG) | ![Add Aquarium](docs/assets/Add-aquarium.png) | ![CARE](docs/assets/CARE.png) |
 
 
 
