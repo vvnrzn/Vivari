@@ -280,10 +280,39 @@ class _AddTaskButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
+    return FloatingActionButton(
       onPressed: onPressed,
-      icon: const Icon(Icons.add),
-      label: const Text('Add Task'),
+      tooltip: 'Add Task',
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: const SizedBox(
+        width: 20,
+        height: 20,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 3,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: VivariColors.background,
+                  borderRadius: BorderRadius.all(Radius.circular(1.5)),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 3,
+              height: 20,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: VivariColors.background,
+                  borderRadius: BorderRadius.all(Radius.circular(1.5)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
