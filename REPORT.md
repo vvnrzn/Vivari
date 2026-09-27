@@ -40,3 +40,45 @@
 - Add local storagefor real user data.
 - Replace placeholder navigation screens with complete interfaces.
 - Add parameter records, water-change records, dosing records, and task functionality.
+
+# Weekly Increment Report
+
+## Week of: September 24 to September 27, 2026
+
+## What changed this week
+
+* Built the Add Aquarium form with fields for aquarium name, aquarium type, volume and units, optional photo, and creation date.
+* Added aquarium cards to the Home Dashboard that display aquarium entries created during the current app session.
+* Added navigation from aquarium cards to an Aquarium Details screen, which currently has a placeholder structure.
+* Reworked the Care screen into a schedule overview with an aquarium filter and separate List, Week, Month, and History views.
+* Added empty states to the Care views since task data is not connected yet.
+* Added a basic Parameters screen with an empty state.
+* Added reusable floating action buttons to the Care and Parameters screens.
+* Added placeholder screens for the Add Task and Log Parameters actions.
+* Updated the bottom navigation styling, icons, and animation.
+* Revised the README with setup instructions, project structure, screenshots, feature descriptions, and known limitations.
+* Added Care and Add Aquarium screenshots to the README and corrected their image references.
+
+## Why
+
+* These changes were made to build the initial aquarium setup flow and allow users to create aquarium entries and view them on the dashboard.
+* The Care and Parameters screens were expanded to establish the main structure for future task scheduling and water parameter tracking.
+
+
+## What broke or what I got stuck on
+
+* The Care and Parameters screens are not connected to task or measurement data yet, so their add actions currently lead to placeholder screens.
+* Aquarium entries are currently stored only in memory, so the entries are lost when the app restarts.
+* Aquarium details, editing, inhabitant management, and persistent storage have not been implemented yet.
+
+## What is left
+
+* Update or fix the two failing widget tests so they match the current UI.
+* Build the full Aquarium Details and Edit Aquarium screens.
+* Add inhabitant management.
+* Add persistent storage for aquarium data and photos.
+* Build parameter logging, history, and tracking.
+* Implement task creation, scheduling, completion, and history in Care.
+* Connect dashboard summaries to aquarium, inhabitant, parameter, and care data.
+* Replace the remaining placeholder screens with complete interfaces.
+* Record and add the demo video to the documentation.
