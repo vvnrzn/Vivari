@@ -1,7 +1,12 @@
-## 1. Overview
+# Vivari
 
-- Vivari (Derived from vivarium ; Latin for "place of life") is an aquarium care app designed to help aquarium owners keep track of their aquariums, water parameters, and care tasks. 
-- Live Demo: https://vvnrzn.github.io/Vivari/
+**Live Demo:** https://vvnrzn.github.io/Vivari/  
+**Demo video:** To be added after recording.  
+**Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University  
+**Author:** vvnrzn  
+
+## 1. Overview
+- Vivari is a Flutter-based aquarium care app designed to help aquarium owners keep track of their aquariums, water parameters, and care tasks. It aims to bring aquarium summaries and maintenance information together in one place.
 
 ## 2. Setup and installation
 
@@ -75,41 +80,62 @@ The app opens to the **Home Dashboard**. Its bottom navigation provides access t
 ```text
 lib/
 ├── main.dart
+├── models/
+│   └── aquarium.dart
 ├── screens/
-│   ├── home_dashboard.dart
+│   ├── add_aquarium_screen.dart
 │   ├── aquarium_details_screen.dart
-│   ├── parameters_screen.dart
 │   ├── care_screen.dart
+│   ├── home_dashboard.dart
+│   ├── parameters_screen.dart
 │   └── placeholder_screen.dart
 ├── theme/
 │   └── app_theme.dart
 └── widgets/
     ├── empty_state.dart
     ├── summary_card.dart
+    ├── vivari_add_button.dart
     ├── vivari_bottom_navigation.dart
     └── vivari_card.dart
 ```
 
 ## 6. Screenshots
 
-![Home Dashboard](docs/assets/HOME-Dashboard.PNG)
+| HOME DASHBOARD | ADD AQUARIUM | CARE |
+| --- | --- | --- |
+| ![HOME](docs/assets/HOME-Dashboard.PNG) | ![Add Aquarium](docs/assets/Add-aquarium.png) | ![CARE](docs/assets/CARE.png) |
 
-- Parameters, Care, and Aquarium Details are still placeholder screens in development.
+
 
 ## 7. Known issues and next steps
 
-Current limitations:
-- Aquarium, inhabitant, task, water change, and dosing information is not connected to stored app data. The dashboard currently shows zero counts and empty-state messages.
-- Parameters, Care, and Aquarium Details are placeholders.
-- “Add Aquarium” opens a temporary placeholder instead of an aquarium creation form.
-- The app does not currently include a data persistence workflow.
-Planned next steps:
-1. Build the aquarium creation and details workflow.
-2. Implement water parameter tracking.
-3. Build care task management and maintenance records.
-4. Connect dashboard summaries to app data.
-5. Add and document screenshots, demo details, and project author information.
+**Current limitations:**
 
+- Aquarium creation is implemented, and new aquariums appear on the dashboard, but the data is stored only in memory and is lost when the app restarts.
+- The dashboard’s inhabitant count, care tasks, water change records, and dosing records are not connected to stored data, so they remain empty.
+- Aquarium Details opens for a selected aquarium, but its detail content is still a placeholder.
+- Parameters has a basic screen and an add button, but parameter logging and tracking are not implemented.
+- Care has a screen structure, but care tasks and maintenance records are not yet connected to app data.
 
+**Planned next steps:**
 
+1. Add persistent storage for aquariums and their photos.
+2. Build out the Aquarium Details screen.
+3. Implement parameter logging and history.
+4. Connect Care to task management and maintenance records.
+5. Connect dashboard summaries to saved aquarium, inhabitant, task, and maintenance data.
+6. Add and document current screenshots, demo details, and project author information.
 
+## Security
+
+See [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md) for the project's security review, including client configuration, GitHub Actions, and the server-side Spoonacular key.
+
+## AI usage
+
+![Built with AI assistance](https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff)
+
+GitHub Copilot and Codex were used to support the development of the app, particularly for code structure, UI patterns, and documentation. The final implementation was reviewed and adjusted by the author to match the project requirements. See [AI-USAGE.md](AI-USAGE.md) for more details. 
+
+## LICENSE
+
+Copyright © 2026 vvnrzn. [MIT License](LICENSE).
