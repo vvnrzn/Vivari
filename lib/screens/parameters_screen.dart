@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/vivari_add_button.dart';
+import 'placeholder_screen.dart';
 
 class ParametersScreen extends StatelessWidget {
   const ParametersScreen({super.key});
+
+  void _openLogParameters(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const PlaceholderScreen(title: 'Log Parameters'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +21,10 @@ class ParametersScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: VivariColors.background,
+      floatingActionButton: VivariAddButton(
+        onPressed: () => _openLogParameters(context),
+        tooltip: 'Log Parameters',
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screen),

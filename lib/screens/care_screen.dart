@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/vivari_add_button.dart';
 import 'placeholder_screen.dart';
 
 class CareScreen extends StatefulWidget {
@@ -32,7 +33,10 @@ class _CareScreenState extends State<CareScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VivariColors.background,
-      floatingActionButton: _AddTaskButton(onPressed: _openAddTask),
+      floatingActionButton: VivariAddButton(
+        onPressed: _openAddTask,
+        tooltip: 'Add Task',
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -119,7 +123,10 @@ class _CareViewScreenState extends State<_CareViewScreen> {
     return Scaffold(
       backgroundColor: VivariColors.background,
       appBar: AppBar(title: Text(widget.title)),
-      floatingActionButton: _AddTaskButton(onPressed: _openAddTask),
+      floatingActionButton: VivariAddButton(
+        onPressed: _openAddTask,
+        tooltip: 'Add Task',
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -266,50 +273,6 @@ class _TaskSection extends StatelessWidget {
             Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.small),
             Text('No tasks', style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AddTaskButton extends StatelessWidget {
-  const _AddTaskButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: onPressed,
-      tooltip: 'Add Task',
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: const SizedBox(
-        width: 20,
-        height: 20,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 20,
-              height: 3,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: VivariColors.background,
-                  borderRadius: BorderRadius.all(Radius.circular(1.5)),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 3,
-              height: 20,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: VivariColors.background,
-                  borderRadius: BorderRadius.all(Radius.circular(1.5)),
-                ),
-              ),
-            ),
           ],
         ),
       ),

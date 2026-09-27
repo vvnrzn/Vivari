@@ -47,7 +47,40 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(centerTitle: false, title: const Text('Vivari')),
+      appBar: AppBar(
+        centerTitle: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Vivari'),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 28,
+              height: 32,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: 3,
+                    top: 10,
+                    child: _VivariBubble(size: 10),
+                  ),
+                  Positioned(
+                    left: 14,
+                    top: 2,
+                    child: _VivariBubble(size: 7),
+                  ),
+                  Positioned(
+                    left: 16,
+                    top: 17,
+                    child: _VivariBubble(size: 6),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screen,
@@ -168,6 +201,25 @@ class _HomeDashboardState extends State<HomeDashboard> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+}
+
+class _VivariBubble extends StatelessWidget {
+  const _VivariBubble({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: VivariColors.primary,
+        shape: BoxShape.circle,
       ),
     );
   }
