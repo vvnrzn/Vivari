@@ -24,21 +24,29 @@ void main() {
     expect(find.text('No tasks for today'), findsOneWidget);
   });
 
-  testWidgets('care shows empty sections and opens separate view screens', (
-    tester,
-  ) async {
+  testWidgets('care switches between four empty view modes', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: CareScreen()));
 
     expect(find.text('SCHEDULE'), findsOneWidget);
     expect(find.text('Care'), findsOneWidget);
-    expect(find.text('Aquarium Filter'), findsOneWidget);
-    expect(find.text('Task Sections'), findsOneWidget);
-    expect(find.text('Clean Algae Scraper'), findsNothing);
+    expect(find.text('All Tanks'), findsOneWidget);
+    expect(find.text('OVERDUE (0)'), findsOneWidget);
+    expect(find.text('DUE TODAY (0)'), findsOneWidget);
+    expect(find.text('UPCOMING — NEXT 7 DAYS (0)'), findsOneWidget);
 
-    await tester.tap(find.text('List'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Week'));
+    await tester.pump();
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('-'), findsNWidgets(7));
 
-    expect(find.text('No tasks scheduled'), findsOneWidget);
+    await tester.tap(find.text('Month'));
+    await tester.pump();
+    expect(find.text('Su'), findsOneWidget);
+    expect(find.text('Sa'), findsOneWidget);
+
+    await tester.tap(find.text('History'));
+    await tester.pump();
+    expect(find.text('No completed tasks'), findsOneWidget);
   });
 
   testWidgets('care add task button opens the placeholder screen', (
@@ -46,7 +54,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CareScreen()));
 
-    await tester.tap(find.text('Add Task'));
+    await tester.tap(find.byTooltip('Add Task'));
     await tester.pumpAndSettle();
 
     expect(find.text('Add Task is ready to be built.'), findsOneWidget);

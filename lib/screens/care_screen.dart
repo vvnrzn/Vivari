@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/empty_state.dart';
 import '../widgets/vivari_add_button.dart';
 import 'placeholder_screen.dart';
+
+enum _CareView { list, week, month, history }
 
 class CareScreen extends StatefulWidget {
   const CareScreen({super.key});
@@ -13,13 +14,7 @@ class CareScreen extends StatefulWidget {
 }
 
 class _CareScreenState extends State<CareScreen> {
-  String _selectedAquarium = 'All aquariums';
-
-  void _openView(String title) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => _CareViewScreen(title: title)),
-    );
-  }
+  _CareView _selectedView = _CareView.list;
 
   void _openAddTask() {
     Navigator.of(context).push(
@@ -47,111 +42,20 @@ class _CareScreenState extends State<CareScreen> {
           ),
           children: [
             const _CareHeader(),
-            const SizedBox(height: AppSpacing.large),
-            _AquariumFilter(
-              value: _selectedAquarium,
-              onChanged: (value) => setState(() => _selectedAquarium = value),
-            ),
-            const SizedBox(height: AppSpacing.large),
-            Text(
-              'View Options',
-              style: Theme.of(context).textTheme.titleMedium,
+            const SizedBox(height: AppSpacing.medium),
+            _ViewSelector(
+              value: _selectedView,
+              onChanged: (view) => setState(() => _selectedView = view),
             ),
             const SizedBox(height: AppSpacing.small),
-            _CareViewOption(
-              title: 'List',
-              subtitle: 'Overdue, due today, and upcoming tasks',
-              icon: Icons.checklist_outlined,
-              onTap: () => _openView('List'),
-            ),
-            _CareViewOption(
-              title: 'Week',
-              subtitle: 'Tasks organized by day',
-              icon: Icons.view_week_outlined,
-              onTap: () => _openView('Week'),
-            ),
-            _CareViewOption(
-              title: 'Month',
-              subtitle: 'Monthly task schedule',
-              icon: Icons.calendar_month_outlined,
-              onTap: () => _openView('Month'),
-            ),
-            _CareViewOption(
-              title: 'History',
-              subtitle: 'Completed care tasks',
-              icon: Icons.history,
-              onTap: () => _openView('History'),
-            ),
+            const _AquariumFilter(),
             const SizedBox(height: AppSpacing.large),
-            Text(
-              'Task Sections',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.small),
-            const _TaskSection(title: 'Overdue'),
-            const _TaskSection(title: 'Due Today'),
-            const _TaskSection(title: 'Upcoming'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CareViewScreen extends StatefulWidget {
-  const _CareViewScreen({required this.title});
-
-  final String title;
-
-  @override
-  State<_CareViewScreen> createState() => _CareViewScreenState();
-}
-
-class _CareViewScreenState extends State<_CareViewScreen> {
-  String _selectedAquarium = 'All aquariums';
-
-  void _openAddTask() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const PlaceholderScreen(title: 'Add Task'),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: VivariColors.background,
-      appBar: AppBar(title: Text(widget.title)),
-      floatingActionButton: VivariAddButton(
-        onPressed: _openAddTask,
-        tooltip: 'Add Task',
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screen,
-            AppSpacing.medium,
-            AppSpacing.screen,
-            96,
-          ),
-          children: [
-            _AquariumFilter(
-              value: _selectedAquarium,
-              onChanged: (value) => setState(() => _selectedAquarium = value),
-            ),
-            const SizedBox(height: AppSpacing.large),
-            EmptyState(
-              title: widget.title == 'History'
-                  ? 'No completed tasks'
-                  : 'No tasks scheduled',
-              message: widget.title == 'History'
-                  ? 'Completed care tasks will appear here.'
-                  : 'Tasks for this view will appear here.',
-              icon: widget.title == 'History'
-                  ? Icons.history
-                  : Icons.check_circle_outline,
-            ),
+            switch (_selectedView) {
+              _CareView.list => const _ListViewContent(),
+              _CareView.week => const _WeekViewContent(),
+              _CareView.month => const _MonthViewContent(),
+              _CareView.history => const _HistoryViewContent(),
+            },
           ],
         ),
       ),
@@ -176,105 +80,482 @@ class _CareHeader extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text('Care', style: textTheme.headlineSmall),
       ],
     );
   }
 }
 
-class _AquariumFilter extends StatelessWidget {
-  const _AquariumFilter({required this.value, required this.onChanged});
+class _ViewSelector extends StatelessWidget {
+  const _ViewSelector({required this.value, required this.onChanged});
 
-  final String value;
-  final ValueChanged<String> onChanged;
+  final _CareView value;
+  final ValueChanged<_CareView> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    const options = [
+      (view: _CareView.list, label: 'List', icon: Icons.view_list_outlined),
+      (view: _CareView.week, label: 'Week', icon: Icons.view_week_outlined),
+      (
+        view: _CareView.month,
+        label: 'Month',
+        icon: Icons.calendar_month_outlined,
+      ),
+      (view: _CareView.history, label: 'History', icon: Icons.history),
+    ];
+
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final option in options) ...[
+              _CompactPill(
+                label: option.label,
+                icon: option.icon,
+                selected: value == option.view,
+                onPressed: () => onChanged(option.view),
+              ),
+              if (option != options.last) const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AquariumFilter extends StatelessWidget {
+  const _AquariumFilter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Aquarium Filter',
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: const Row(
+            children: [_CompactPill(label: 'All Tanks', selected: true)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactPill extends StatelessWidget {
+  const _CompactPill({
+    required this.label,
+    required this.selected,
+    this.icon,
+    this.onPressed,
+  });
+
+  final String label;
+  final bool selected;
+  final IconData? icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected
+        ? VivariColors.background
+        : VivariColors.textMuted;
+
+    return Material(
+      color: selected ? VivariColors.primary : VivariColors.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? VivariColors.primary : VivariColors.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: foreground),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ListViewContent extends StatelessWidget {
+  const _ListViewContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _TaskSection(
+          title: 'OVERDUE',
+          count: 0,
+          titleColor: VivariColors.error,
+        ),
+        SizedBox(height: AppSpacing.medium),
+        _TaskSection(title: 'DUE TODAY', count: 0),
+        SizedBox(height: AppSpacing.medium),
+        _TaskSection(title: 'UPCOMING — NEXT 7 DAYS', count: 0),
+      ],
+    );
+  }
+}
+
+class _TaskSection extends StatelessWidget {
+  const _TaskSection({
+    required this.title,
+    required this.count,
+    this.titleColor,
+  });
+
+  final String title;
+  final int count;
+  final Color? titleColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Aquarium Filter', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.small),
-        DropdownButtonFormField<String>(
-          value: value,
-          decoration: const InputDecoration(
-            filled: true,
-            fillColor: VivariColors.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: VivariColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: VivariColors.border),
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        Text(
+          '$title ($count)',
+          style: textTheme.labelSmall?.copyWith(
+            color: titleColor ?? VivariColors.textMuted,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
           ),
-          dropdownColor: VivariColors.surface,
-          items: const [
-            DropdownMenuItem(
-              value: 'All aquariums',
-              child: Text('All aquariums'),
-            ),
-            DropdownMenuItem(value: 'Unassigned', child: Text('Unassigned')),
-          ],
-          onChanged: (selected) {
-            if (selected != null) onChanged(selected);
-          },
+        ),
+        const SizedBox(height: AppSpacing.small),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.medium,
+            vertical: 18,
+          ),
+          decoration: BoxDecoration(
+            color: VivariColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: VivariColors.border),
+          ),
+          child: Text('No tasks', style: textTheme.bodySmall),
         ),
       ],
     );
   }
 }
 
-class _CareViewOption extends StatelessWidget {
-  const _CareViewOption({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
+class _WeekViewContent extends StatelessWidget {
+  const _WeekViewContent();
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.small),
-      child: ListTile(
-        leading: Icon(icon, color: VivariColors.primary),
-        title: Text(title, style: Theme.of(context).textTheme.titleMedium),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
+    final today = DateUtils.dateOnly(DateTime.now());
+
+    return Column(
+      children: [
+        for (var offset = 0; offset < 7; offset++) ...[
+          _WeekDay(
+            date: today.add(Duration(days: offset)),
+            isToday: offset == 0,
+          ),
+          if (offset < 6) const SizedBox(height: AppSpacing.small),
+        ],
+      ],
+    );
+  }
+}
+
+class _WeekDay extends StatelessWidget {
+  const _WeekDay({required this.date, required this.isToday});
+
+  final DateTime date;
+  final bool isToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final weekday = switch (date.weekday) {
+      DateTime.monday => 'Mon',
+      DateTime.tuesday => 'Tue',
+      DateTime.wednesday => 'Wed',
+      DateTime.thursday => 'Thu',
+      DateTime.friday => 'Fri',
+      DateTime.saturday => 'Sat',
+      _ => 'Sun',
+    };
+    final foreground = isToday
+        ? VivariColors.background
+        : VivariColors.textPrimary;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.medium),
+      decoration: BoxDecoration(
+        color: VivariColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: VivariColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isToday ? VivariColors.primary : VivariColors.secondary,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '${date.day}',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.small),
+          Expanded(
+            child: Text(
+              isToday ? 'Today' : weekday,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          Text(
+            '-',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _TaskSection extends StatelessWidget {
-  const _TaskSection({required this.title});
+class _MonthViewContent extends StatefulWidget {
+  const _MonthViewContent();
 
-  final String title;
+  @override
+  State<_MonthViewContent> createState() => _MonthViewContentState();
+}
+
+class _MonthViewContentState extends State<_MonthViewContent> {
+  static const _months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  final DateTime _today = DateUtils.dateOnly(DateTime.now());
+  late DateTime _displayedMonth = DateTime(_today.year, _today.month);
+
+  void _changeMonth(int amount) {
+    setState(() {
+      _displayedMonth = DateTime(
+        _displayedMonth.year,
+        _displayedMonth.month + amount,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.small),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.medium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.small),
-            Text('No tasks', style: Theme.of(context).textTheme.bodySmall),
-          ],
+    final firstWeekday =
+        DateTime(_displayedMonth.year, _displayedMonth.month).weekday % 7;
+    final daysInMonth = DateUtils.getDaysInMonth(
+      _displayedMonth.year,
+      _displayedMonth.month,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.medium),
+      decoration: BoxDecoration(
+        color: VivariColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: VivariColors.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Previous month',
+                onPressed: () => _changeMonth(-1),
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Expanded(
+                child: Text(
+                  '${_months[_displayedMonth.month - 1]} ${_displayedMonth.year}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Next month',
+                onPressed: () => _changeMonth(1),
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.small),
+          Row(
+            children: [
+              for (final day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'])
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: const TextStyle(
+                        color: VivariColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.small),
+          GridView.count(
+            crossAxisCount: 7,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 2,
+            childAspectRatio: 0.86,
+            children: [
+              for (var empty = 0; empty < firstWeekday; empty++)
+                const SizedBox.shrink(),
+              for (var day = 1; day <= daysInMonth; day++)
+                _CalendarDay(
+                  day: day,
+                  selected:
+                      _displayedMonth.year == _today.year &&
+                      _displayedMonth.month == _today.month &&
+                      day == _today.day,
+                  hasTasks: false,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarDay extends StatelessWidget {
+  const _CalendarDay({
+    required this.day,
+    required this.selected,
+    required this.hasTasks,
+  });
+
+  final int day;
+  final bool selected;
+  final bool hasTasks;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? VivariColors.primary : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            '$day',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: selected
+                  ? VivariColors.background
+                  : VivariColors.textPrimary,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
         ),
+        const SizedBox(height: 3),
+        SizedBox(
+          width: 4,
+          height: 4,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: hasTasks ? VivariColors.primary : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistoryViewContent extends StatelessWidget {
+  const _HistoryViewContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.medium,
+        vertical: 24,
+      ),
+      decoration: BoxDecoration(
+        color: VivariColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: VivariColors.border),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.history, color: VivariColors.primary, size: 28),
+          const SizedBox(height: AppSpacing.small),
+          Text(
+            'No completed tasks',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Completed care tasks will appear here.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }
