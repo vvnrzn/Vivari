@@ -1,6 +1,8 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 
+import 'models/aquarium.dart';
+import 'models/care_record.dart';
 import 'screens/care_screen.dart';
 import 'screens/home_dashboard.dart';
 import 'screens/parameters_screen.dart';
@@ -34,15 +36,42 @@ class VivariShell extends StatefulWidget {
   State<VivariShell> createState() => _VivariShellState();
 }
 
+class _CareDataNotifier extends ChangeNotifier {
+  void update() => notifyListeners();
+}
+
 class _VivariShellState extends State<VivariShell> {
   final _navigatorKeys = List<GlobalKey<NavigatorState>>.generate(
     3,
     (_) => GlobalKey<NavigatorState>(),
   );
   int _selectedIndex = 1;
+  final List<Aquarium> _aquariums = [];
+  final List<CareTask> _tasks = [];
+  final List<CareActivity> _activities = [];
+  final List<ActivityTemplate> _templates = [];
+  final _CareDataNotifier _dataChanges = _CareDataNotifier();
 
   void _selectTab(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  void _addAquarium(Aquarium aquarium) {
+    setState(() => _aquariums.add(aquarium));
+    _dataChanges.update();
+  }
+
+  void _addTask(CareTask task) {
+    setState(() => _tasks.add(task));
+    _dataChanges.update();
+  }
+
+  void _logActivity(CareActivity activity, ActivityTemplate? template) {
+    setState(() {
+      _activities.add(activity);
+      if (template != null) _templates.add(template);
+    });
+    _dataChanges.update();
   }
 
   Widget _buildTabNavigator(int index) {
@@ -50,13 +79,34 @@ class _VivariShellState extends State<VivariShell> {
       key: _navigatorKeys[index],
       onGenerateRoute: (settings) => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => switch (index) {
-          0 => const ParametersScreen(),
-          1 => HomeDashboard(onSelectTab: _selectTab),
-          _ => const CareScreen(),
-        },
+        builder: (_) => AnimatedBuilder(
+          animation: _dataChanges,
+          builder: (context, child) => switch (index) {
+            0 => const ParametersScreen(),
+            1 => HomeDashboard(
+              onSelectTab: _selectTab,
+              aquariums: _aquariums,
+              tasks: _tasks,
+              activities: _activities,
+              onAquariumAdded: _addAquarium,
+            ),
+            _ => CareScreen(
+              aquariums: _aquariums,
+              tasks: _tasks,
+              templates: _templates,
+              onTaskCreated: _addTask,
+              onActivityLogged: _logActivity,
+            ),
+          },
+        ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _dataChanges.dispose();
+    super.dispose();
   }
 
   @override

@@ -1,13 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../models/aquarium.dart';
+import '../models/care_record.dart';
 import '../theme/app_theme.dart';
 import '../widgets/vivari_add_button.dart';
-import 'placeholder_screen.dart';
+import 'add_task_screen.dart';
+import 'log_activity_screen.dart';
 
 enum _CareView { list, week, month, history }
 
 class CareScreen extends StatefulWidget {
-  const CareScreen({super.key});
+  const CareScreen({
+    this.aquariums = const [],
+    this.tasks = const [],
+    this.templates = const [],
+    this.onTaskCreated,
+    this.onActivityLogged,
+    super.key,
+  });
+
+  final List<Aquarium> aquariums;
+  final List<CareTask> tasks;
+  final List<ActivityTemplate> templates;
+  final ValueChanged<CareTask>? onTaskCreated;
+  final void Function(CareActivity activity, ActivityTemplate? template)?
+  onActivityLogged;
 
   @override
   State<CareScreen> createState() => _CareScreenState();
@@ -16,12 +33,66 @@ class CareScreen extends StatefulWidget {
 class _CareScreenState extends State<CareScreen> {
   _CareView _selectedView = _CareView.list;
 
-  void _openAddTask() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const PlaceholderScreen(title: 'Add Task'),
+  Future<void> _openAddOptions() async {
+    final selection = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+          children: [
+            Text(
+              'What would you like to add?',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose whether you are recording something done or planning ahead.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 20),
+            _AddOption(
+              title: 'Log activity',
+              description: 'Save something you did without creating a task.',
+              icon: Icons.check_circle_outline,
+              onTap: () => Navigator.pop(context, 'activity'),
+            ),
+            const SizedBox(height: 10),
+            _AddOption(
+              title: 'Add task',
+              description: 'Plan something to do later.',
+              icon: Icons.event_note_outlined,
+              onTap: () => Navigator.pop(context, 'task'),
+            ),
+          ],
+        ),
       ),
     );
+    if (!mounted || selection == null) return;
+
+    if (selection == 'activity') {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => LogActivityScreen(
+            aquariums: widget.aquariums,
+            templates: widget.templates,
+            onSaved: (activity, template) =>
+                widget.onActivityLogged?.call(activity, template),
+          ),
+        ),
+      );
+    } else {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => AddTaskScreen(
+            aquariums: widget.aquariums,
+            onCreated: (task) => widget.onTaskCreated?.call(task),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -29,7 +100,7 @@ class _CareScreenState extends State<CareScreen> {
     return Scaffold(
       backgroundColor: VivariColors.background,
       floatingActionButton: VivariAddButton(
-        onPressed: _openAddTask,
+        onPressed: _openAddOptions,
         tooltip: 'Add Task',
       ),
       body: SafeArea(
@@ -51,7 +122,7 @@ class _CareScreenState extends State<CareScreen> {
             const _AquariumFilter(),
             const SizedBox(height: AppSpacing.large),
             switch (_selectedView) {
-              _CareView.list => const _ListViewContent(),
+              _CareView.list => _ListViewContent(tasks: widget.tasks),
               _CareView.week => const _WeekViewContent(),
               _CareView.month => const _MonthViewContent(),
               _CareView.history => const _HistoryViewContent(),
@@ -61,6 +132,57 @@ class _CareScreenState extends State<CareScreen> {
       ),
     );
   }
+}
+
+class _AddOption extends StatelessWidget {
+  const _AddOption({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: VivariColors.surface,
+    borderRadius: BorderRadius.circular(16),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: VivariColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: VivariColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _CareHeader extends StatelessWidget {
@@ -204,21 +326,50 @@ class _CompactPill extends StatelessWidget {
 }
 
 class _ListViewContent extends StatelessWidget {
-  const _ListViewContent();
+  const _ListViewContent({required this.tasks});
+
+  final List<CareTask> tasks;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final today = DateUtils.dateOnly(DateTime.now());
+    final dueToday = tasks.where((task) => task.isDueOn(today)).toList();
+    final overdue = tasks
+        .where(
+          (task) =>
+              !task.isDueOn(today) &&
+              !task.dueAt.isAfter(DateTime.now()) &&
+              task.recurrence == TaskRecurrence.none,
+        )
+        .toList();
+    final upcoming = tasks
+        .where(
+          (task) =>
+              task.dueAt.isAfter(today) &&
+              task.dueAt.isBefore(today.add(const Duration(days: 8))),
+        )
+        .toList();
+
+    return Column(
       children: [
         _TaskSection(
           title: 'OVERDUE',
-          count: 0,
+          count: overdue.length,
           titleColor: VivariColors.error,
+          tasks: overdue,
         ),
         SizedBox(height: AppSpacing.medium),
-        _TaskSection(title: 'DUE TODAY', count: 0),
+        _TaskSection(
+          title: 'DUE TODAY',
+          count: dueToday.length,
+          tasks: dueToday,
+        ),
         SizedBox(height: AppSpacing.medium),
-        _TaskSection(title: 'UPCOMING — NEXT 7 DAYS', count: 0),
+        _TaskSection(
+          title: 'UPCOMING — NEXT 7 DAYS',
+          count: upcoming.length,
+          tasks: upcoming,
+        ),
       ],
     );
   }
@@ -228,11 +379,13 @@ class _TaskSection extends StatelessWidget {
   const _TaskSection({
     required this.title,
     required this.count,
+    this.tasks = const [],
     this.titleColor,
   });
 
   final String title;
   final int count;
+  final List<CareTask> tasks;
   final Color? titleColor;
 
   @override
@@ -262,7 +415,26 @@ class _TaskSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: VivariColors.border),
           ),
-          child: Text('No tasks', style: textTheme.bodySmall),
+          child: tasks.isEmpty
+              ? Text('No tasks', style: textTheme.bodySmall)
+              : Column(
+                  children: [
+                    for (final task in tasks)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(task.title),
+                        subtitle: task.aquariumName.isEmpty
+                            ? null
+                            : Text(task.aquariumName),
+                        trailing: Text(
+                          MaterialLocalizations.of(
+                            context,
+                          ).formatTimeOfDay(TimeOfDay.fromDateTime(task.dueAt)),
+                          style: textTheme.bodySmall,
+                        ),
+                      ),
+                  ],
+                ),
         ),
       ],
     );

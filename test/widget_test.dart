@@ -8,14 +8,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:final_project/main.dart';
+import 'package:final_project/models/care_record.dart';
 import 'package:final_project/screens/care_screen.dart';
 
 void main() {
   testWidgets('home dashboard starts with empty states', (tester) async {
     await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
 
     expect(find.text('Vivari'), findsOneWidget);
-    expect(find.text('Total Aquariums'), findsOneWidget);
+    expect(find.text('TOTAL AQUARIUMS'), findsOneWidget);
 
     await tester.drag(find.byType(Scrollable), const Offset(0, -500));
     await tester.pump();
@@ -49,14 +51,114 @@ void main() {
     expect(find.text('No completed tasks'), findsOneWidget);
   });
 
-  testWidgets('care add task button opens the placeholder screen', (
-    tester,
-  ) async {
+  testWidgets('care add button offers activity and task flows', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: CareScreen()));
 
     await tester.tap(find.byTooltip('Add Task'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add Task is ready to be built.'), findsOneWidget);
+    expect(find.text('What would you like to add?'), findsOneWidget);
+    expect(find.text('Log activity'), findsOneWidget);
+    expect(find.text('Add task'), findsOneWidget);
+    expect(
+      find.text(
+        'Choose whether you are recording something done or planning ahead.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.ensureVisible(find.text('Add task'));
+    await tester.tap(find.text('Add task'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Task Details'), findsOneWidget);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('Recurring Task'), findsOneWidget);
+    expect(find.text('Date & Time'), findsOneWidget);
+    expect(find.text('Create Task'), findsOneWidget);
+
+    await tester.tap(find.text('Recurring Task'));
+    await tester.pumpAndSettle();
+    expect(find.text('Basic'), findsOneWidget);
+    expect(find.text('Custom Interval'), findsOneWidget);
+    expect(find.text('Specific Weekdays'), findsOneWidget);
+    expect(find.text('Specific Month Days'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Custom Interval'));
+    await tester.tap(find.text('Custom Interval'));
+    await tester.pumpAndSettle();
+    expect(find.text('Every'), findsOneWidget);
+    expect(find.text('days'), findsOneWidget);
+    expect(find.text('weeks'), findsOneWidget);
+    expect(find.text('months'), findsOneWidget);
+    expect(find.textContaining('Schedule Summary:'), findsOneWidget);
+  });
+
+  test('recurring tasks match their configured schedule', () {
+    final task = CareTask(
+      title: 'Feed Fish',
+      category: 'Feed Fish',
+      aquariumName: 'Community Tank',
+      dueAt: DateTime(2026, 9, 30),
+      recurrence: TaskRecurrence.customInterval,
+      recurrenceUnit: 'Days',
+      recurrenceInterval: 2,
+    );
+
+    expect(task.isDueOn(DateTime(2026, 9, 30)), isTrue);
+    expect(task.isDueOn(DateTime(2026, 10, 2)), isTrue);
+    expect(task.isDueOn(DateTime(2026, 10, 1)), isFalse);
+    expect(task.isDueOn(DateTime(2026, 9, 29)), isFalse);
+  });
+
+  testWidgets('creating a task updates Home dashboard due today', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Care'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add Task'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Add task'));
+    await tester.tap(find.text('Add task'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Feed Fish'));
+    await tester.tap(find.text('Feed Fish'));
+    await tester.pump();
+    await tester.tap(find.text('Create Task'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Feed Fish'), findsOneWidget);
+  });
+
+  testWidgets('logging water change updates dashboard status', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Care'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add Task'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Log activity'));
+    await tester.tap(find.text('Log activity'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Changed water'));
+    await tester.pump();
+    await tester.tap(find.text('Save activity'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LAST WATER CHANGE'), findsOneWidget);
+    expect(find.text('No records yet'), findsOneWidget);
   });
 }

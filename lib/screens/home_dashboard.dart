@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/aquarium.dart';
+import '../models/care_record.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/summary_card.dart';
@@ -10,24 +11,33 @@ import 'add_aquarium_screen.dart';
 import 'aquarium_details_screen.dart';
 
 class HomeDashboard extends StatefulWidget {
-  const HomeDashboard({required this.onSelectTab, super.key});
+  const HomeDashboard({
+    required this.onSelectTab,
+    required this.aquariums,
+    required this.tasks,
+    required this.activities,
+    required this.onAquariumAdded,
+    super.key,
+  });
 
   final ValueChanged<int> onSelectTab;
+  final List<Aquarium> aquariums;
+  final List<CareTask> tasks;
+  final List<CareActivity> activities;
+  final ValueChanged<Aquarium> onAquariumAdded;
 
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
 }
 
 class _HomeDashboardState extends State<HomeDashboard> {
-  final List<Aquarium> _aquariums = [];
-
   Future<void> _addAquarium(BuildContext context) async {
     final aquarium = await Navigator.push<Aquarium>(
       context,
       MaterialPageRoute<Aquarium>(builder: (_) => const AddAquariumScreen()),
     );
     if (aquarium != null && mounted) {
-      setState(() => _aquariums.add(aquarium));
+      widget.onAquariumAdded(aquarium);
     }
   }
 
@@ -44,8 +54,32 @@ class _HomeDashboardState extends State<HomeDashboard> {
     widget.onSelectTab(2);
   }
 
+  CareActivity? _latestActivity(String name) {
+    final matches = widget.activities.where((activity) => activity.name == name);
+    if (matches.isEmpty) return null;
+    return matches.reduce(
+      (latest, activity) =>
+          activity.loggedAt.isAfter(latest.loggedAt) ? activity : latest,
+    );
+  }
+
+  String _activityStatus(BuildContext context, CareActivity? activity) {
+    if (activity == null) return 'No records yet';
+    final date = MaterialLocalizations.of(
+      context,
+    ).formatShortDate(activity.loggedAt);
+    return activity.aquariumName.isEmpty
+        ? date
+        : '$date · ${activity.aquariumName}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final dueToday = widget.tasks
+        .where((task) => task.isDueOn(DateTime.now()))
+        .toList();
+    final lastWaterChange = _latestActivity('Changed water');
+    final lastDosing = _latestActivity('Added product or fertilizer');
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -94,7 +128,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               Expanded(
                 child: SummaryCard(
                   label: 'Total Aquariums',
-                  value: '${_aquariums.length}',
+                  value: '${widget.aquariums.length}',
                 ),
               ),
               const SizedBox(width: AppSpacing.medium),
@@ -117,21 +151,45 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       context,
                     ).textTheme.bodySmall?.copyWith(letterSpacing: 0.5),
                   ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'No tasks for today',
-                          style: Theme.of(context).textTheme.titleMedium,
+                  if (dueToday.isEmpty)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'No tasks for today',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => _openCare(context),
+                          child: const Text('VIEW ALL'),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    )
+                  else ...[
+                    for (final task in dueToday)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(task.title),
+                        subtitle: task.aquariumName.isEmpty
+                            ? null
+                            : Text(task.aquariumName),
+                        trailing: Text(
+                          MaterialLocalizations.of(
+                            context,
+                          ).formatTimeOfDay(TimeOfDay.fromDateTime(task.dueAt)),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
-                      TextButton(
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
                         onPressed: () => _openCare(context),
                         child: const Text('VIEW ALL'),
                       ),
-                      const Icon(Icons.chevron_right),
-                    ],
-                  ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -142,22 +200,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
             child: IntrinsicHeight(
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Padding(
-                      padding: EdgeInsets.all(AppSpacing.medium),
+                      padding: const EdgeInsets.all(AppSpacing.medium),
                       child: _SummaryValue(
                         label: 'Last Water Change',
-                        value: 'No records yet',
+                        value: _activityStatus(context, lastWaterChange),
                       ),
                     ),
                   ),
                   Container(width: 1, color: VivariColors.secondary),
-                  const Expanded(
+                  Expanded(
                     child: Padding(
-                      padding: EdgeInsets.all(AppSpacing.medium),
+                      padding: const EdgeInsets.all(AppSpacing.medium),
                       child: _SummaryValue(
                         label: 'Last Dosing',
-                        value: 'No records yet',
+                        value: _activityStatus(context, lastDosing),
                       ),
                     ),
                   ),
@@ -184,14 +242,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ],
           ),
           const SizedBox(height: AppSpacing.small),
-          if (_aquariums.isEmpty)
+          if (widget.aquariums.isEmpty)
             const EmptyState(
               title: 'No aquariums yet',
               message: 'Add your first aquarium to get started.',
               icon: Icons.water_outlined,
             )
           else
-            ..._aquariums.map(
+            ...widget.aquariums.map(
               (aquarium) => Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.small),
                 child: _AquariumCard(
