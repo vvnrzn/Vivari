@@ -75,9 +75,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final dueToday = widget.tasks
-        .where((task) => task.isDueOn(DateTime.now()))
-        .toList();
+    final dueTodayCount = widget.tasks
+        .where((task) => task.isDueOn(DateUtils.dateOnly(DateTime.now())))
+        .length;
     final lastWaterChange = _latestActivity('Changed water');
     final lastDosing = _latestActivity('Added product or fertilizer');
     return Scaffold(
@@ -151,7 +151,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       context,
                     ).textTheme.bodySmall?.copyWith(letterSpacing: 0.5),
                   ),
-                  if (dueToday.isEmpty)
+                  if (dueTodayCount == 0)
                     Row(
                       children: [
                         Expanded(
@@ -168,26 +168,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       ],
                     )
                   else ...[
-                    for (final task in dueToday)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(task.title),
-                        subtitle: task.aquariumName.isEmpty
-                            ? null
-                            : Text(task.aquariumName),
-                        trailing: Text(
-                          MaterialLocalizations.of(
-                            context,
-                          ).formatTimeOfDay(TimeOfDay.fromDateTime(task.dueAt)),
-                          style: Theme.of(context).textTheme.bodySmall,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$dueTodayCount',
+                            style: Theme.of(context).textTheme.displaySmall,
+                          ),
                         ),
-                      ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => _openCare(context),
-                        child: const Text('VIEW ALL'),
-                      ),
+                        TextButton(
+                          onPressed: () => _openCare(context),
+                          child: const Text('VIEW ALL'),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
                     ),
                   ],
                 ],

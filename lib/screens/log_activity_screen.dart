@@ -15,7 +15,8 @@ class LogActivityScreen extends StatefulWidget {
 
   final List<Aquarium> aquariums;
   final List<ActivityTemplate> templates;
-  final void Function(CareActivity activity, ActivityTemplate? template) onSaved;
+  final void Function(CareActivity activity, ActivityTemplate? template)
+  onSaved;
 
   @override
   State<LogActivityScreen> createState() => _LogActivityScreenState();
@@ -46,7 +47,7 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
   final _noteController = TextEditingController();
   DateTime _date = DateTime.now();
   Aquarium? _aquarium;
-  String? _selectedActivity;
+  final Set<String> _selectedActivities = {};
   String _category = 'Maintenance';
   String? _unit;
   bool _saveAsTemplate = false;
@@ -61,13 +62,21 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
 
   void _selectActivity(String activity) {
     setState(() {
-      _selectedActivity = activity;
-      _nameController.text = activity == 'Custom activity' ? '' : activity;
-      _category = activity == 'Added product or fertilizer'
-          ? 'Water treatment'
-          : 'Maintenance';
+      if (!_selectedActivities.add(activity)) {
+        _selectedActivities.remove(activity);
+      } else if (activity == 'Custom activity') {
+        _nameController.clear();
+        _category = 'Maintenance';
+      }
     });
   }
+
+  String _categoryFor(String activity) => switch (activity) {
+    'Added product or fertilizer' => 'Water treatment',
+    'Cleaned filter' => 'Filtration and media',
+    'Fed fish' => 'Other',
+    _ => 'Maintenance',
+  };
 
   Future<void> _pickDate() async {
     final value = await showDatePicker(
@@ -118,9 +127,13 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
 
   void _applyTemplate(ActivityTemplate template) {
     setState(() {
-      _selectedActivity = _activities.contains(template.name)
-          ? template.name
-          : 'Custom activity';
+      _selectedActivities
+        ..clear()
+        ..add(
+          _activities.contains(template.name)
+              ? template.name
+              : 'Custom activity',
+        );
       _nameController.text = template.name;
       _category = template.category;
       _amountController.text = template.amount ?? '';
@@ -130,50 +143,61 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
   }
 
   void _save() {
-    final name = _nameController.text.trim();
-    if (name.isEmpty || _selectedActivity == null) {
+    final customName = _nameController.text.trim();
+    if (_selectedActivities.isEmpty ||
+        (_selectedActivities.contains('Custom activity') &&
+            customName.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choose an activity and enter its name.')),
+        const SnackBar(
+          content: Text('Choose at least one activity and enter its name.'),
+        ),
       );
       return;
     }
-    final activity = CareActivity(
-      name: name,
-      category: _category,
-      aquariumName: _aquarium?.name ?? '',
-      loggedAt: DateTime(
-        _date.year,
-        _date.month,
-        _date.day,
-        DateTime.now().hour,
-        DateTime.now().minute,
-      ),
-      amount: _amountController.text.trim().isEmpty
-          ? null
-          : _amountController.text.trim(),
-      unit: _unit,
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
+    final now = DateTime.now();
+    final loggedAt = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      now.hour,
+      now.minute,
     );
-    final template = _saveAsTemplate
-        ? ActivityTemplate(
-            name: name,
-            category: _category,
-            amount: activity.amount,
-            unit: activity.unit,
-            note: activity.note,
-          )
-        : null;
-    widget.onSaved(activity, template);
+    final amount = _amountController.text.trim();
+    final note = _noteController.text.trim();
+
+    for (final selectedActivity in _selectedActivities) {
+      final name = selectedActivity == 'Custom activity'
+          ? customName
+          : selectedActivity;
+      final category = selectedActivity == 'Custom activity'
+          ? _category
+          : _categoryFor(selectedActivity);
+      final activity = CareActivity(
+        name: name,
+        category: category,
+        aquariumName: _aquarium?.name ?? '',
+        loggedAt: loggedAt,
+        amount: amount.isEmpty ? null : amount,
+        unit: _unit,
+        note: note.isEmpty ? null : note,
+      );
+      final template = _saveAsTemplate
+          ? ActivityTemplate(
+              name: name,
+              category: category,
+              amount: activity.amount,
+              unit: activity.unit,
+              note: activity.note,
+            )
+          : null;
+      widget.onSaved(activity, template);
+    }
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = MaterialLocalizations.of(
-      context,
-    ).formatFullDate(_date);
+    final dateLabel = MaterialLocalizations.of(context).formatFullDate(_date);
 
     return Scaffold(
       appBar: AppBar(
@@ -185,7 +209,7 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
         title: const Text('Log activity'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 96),
         children: [
           Text(
             'Save something you did without creating a task',
@@ -222,8 +246,10 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
             ],
           ),
           if (widget.templates.isEmpty)
-            Text('Save an activity as a template to reuse it later.',
-                style: Theme.of(context).textTheme.bodySmall)
+            Text(
+              'Save an activity as a template to reuse it later.',
+              style: Theme.of(context).textTheme.bodySmall,
+            )
           else
             Wrap(
               spacing: 8,
@@ -244,37 +270,36 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: _ChoiceRow(
                 label: activity,
-                selected: _selectedActivity == activity,
+                selected: _selectedActivities.contains(activity),
                 onTap: () => _selectActivity(activity),
               ),
             ),
-          if (_selectedActivity != null) ...[
+          if (_selectedActivities.isNotEmpty) ...[
             const SizedBox(height: 12),
             _SectionLabel(
-              _selectedActivity == 'Custom activity'
+              _selectedActivities.contains('Custom activity')
                   ? 'Custom activity details'
-                  : 'Activity details',
+                  : 'Activity details (applies to all selected)',
             ),
             const SizedBox(height: 10),
-            _TextField(
-              controller: _nameController,
-              label: 'Activity name',
-            ),
-            const SizedBox(height: 16),
-            _SectionLabel('Category'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final category in _categories)
-                  _Pill(
-                    label: category,
-                    selected: category == _category,
-                    onTap: () => setState(() => _category = category),
-                  ),
-              ],
-            ),
+            if (_selectedActivities.contains('Custom activity')) ...[
+              _TextField(controller: _nameController, label: 'Activity name'),
+              const SizedBox(height: 16),
+              _SectionLabel('Category'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final category in _categories)
+                    _Pill(
+                      label: category,
+                      selected: category == _category,
+                      onTap: () => setState(() => _category = category),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -400,7 +425,8 @@ class _UnitPickerState extends State<_UnitPicker> {
               controller: _customController,
               decoration: const InputDecoration(hintText: 'Enter a unit'),
               onChanged: (value) => setState(
-                () => _selected = value.trim().isEmpty ? _selected : value.trim(),
+                () =>
+                    _selected = value.trim().isEmpty ? _selected : value.trim(),
               ),
             ),
             const SizedBox(height: 16),
@@ -484,9 +510,7 @@ class _ChoiceRow extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
+              selected ? Icons.check_box : Icons.check_box_outline_blank,
               size: 20,
               color: selected ? VivariColors.primary : VivariColors.textMuted,
             ),

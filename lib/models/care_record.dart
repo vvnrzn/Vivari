@@ -77,6 +77,18 @@ class CareActivity {
   final String? note;
 }
 
+class CareTaskCompletion {
+  const CareTaskCompletion({
+    required this.task,
+    required this.scheduledDate,
+    required this.completedAt,
+  });
+
+  final CareTask task;
+  final DateTime scheduledDate;
+  final DateTime completedAt;
+}
+
 class ActivityTemplate {
   const ActivityTemplate({
     required this.name,

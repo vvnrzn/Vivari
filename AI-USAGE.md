@@ -13,16 +13,15 @@ At least six entries. One per real use. Every entry needs a commit link.
 
 ### 2026-09-23 Built initial home screen dashboard
 - **Tool:** Copilot
-- **What I asked for:** I asked the AI to create the base structure for the home dashboard as well as the other three main screens: Aquarium Details, Parameters, and Care. I also want to make sure the main navigation between Home, Parameters, and Care is working so I have a clear foundation for building the rest of the app.
-- **What it gave back:** Copilot generated the initial Home Dashboard layout and placeholder screens for Aquarium Details, Parameters, and Care. It also set up navigation between Home, Parameters, and Care. The first version did not include empty states, so I added those myself.
+- **What I asked for:** Create the base structure for the home dashboard as well as the other three main screens: Aquarium Details, Parameters, and Care. I also want to make sure the main navigation between Home, Parameters, and Care is working so I have a clear foundation for building the rest of the app.
+- **What it gave back:** It generated the initial Home Dashboard layout and placeholder screens for Aquarium Details, Parameters, and Care. It also set up navigation between Home, Parameters, and Care. The first version did not include empty states, so I added those myself.
 - **What I kept, what I changed, and why:** Reworked the Home Dashboard by removing the Settings and Notifications buttons and extra heading, then arranging the summaries into a two-column aquarium and inhabitant row, a tappable Tasks Due Today card that opens Care, and a split card for the latest water change and dosing. All data remains empty, while the Add Aquarium button and bottom navigation remain functional.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f
 
-### -- 
-- **Tool:** 
-- **What I asked for:**
-- **What it gave back:** 
-- **What I kept, what I changed, and why:** 
+### 2026-09-30 Construct care screen activity log and task creation
+- **Tool:** Copilot
+- **What I asked for:** Add an activity logging flow and the basic task creation flow, then connect the saved information to the Home dashboard.
+- **What it gave back:** It added a “What would you like to add?” chooser from the floating button and built an activity logging flow with aquarium selection, preset activities, custom activities, categories, amount and unit selection, notes, and a date picker. It also built a task creation form with four recurring schedule options. Shared activity, task, and template records were added, and app-level state was connected across the care screens. The Home dashboard was updated to show tasks due today and reflect water-change or dosing activity based on its date and aquarium. Tests were added for the flows, dashboard integration, and recurring schedules.
 - **Commit:** 
 
 ### -- 

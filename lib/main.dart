@@ -49,6 +49,7 @@ class _VivariShellState extends State<VivariShell> {
   final List<Aquarium> _aquariums = [];
   final List<CareTask> _tasks = [];
   final List<CareActivity> _activities = [];
+  final List<CareTaskCompletion> _taskCompletions = [];
   final List<ActivityTemplate> _templates = [];
   final _CareDataNotifier _dataChanges = _CareDataNotifier();
 
@@ -74,6 +75,31 @@ class _VivariShellState extends State<VivariShell> {
     _dataChanges.update();
   }
 
+  void _setTaskCompletion(
+    CareTask task,
+    DateTime scheduledDate,
+    bool completed,
+  ) {
+    final date = DateUtils.dateOnly(scheduledDate);
+    setState(() {
+      _taskCompletions.removeWhere(
+        (entry) =>
+            identical(entry.task, task) &&
+            DateUtils.isSameDay(entry.scheduledDate, date),
+      );
+      if (completed) {
+        _taskCompletions.add(
+          CareTaskCompletion(
+            task: task,
+            scheduledDate: date,
+            completedAt: DateTime.now(),
+          ),
+        );
+      }
+    });
+    _dataChanges.update();
+  }
+
   Widget _buildTabNavigator(int index) {
     return Navigator(
       key: _navigatorKeys[index],
@@ -93,9 +119,12 @@ class _VivariShellState extends State<VivariShell> {
             _ => CareScreen(
               aquariums: _aquariums,
               tasks: _tasks,
+              activities: _activities,
+              taskCompletions: _taskCompletions,
               templates: _templates,
               onTaskCreated: _addTask,
               onActivityLogged: _logActivity,
+              onTaskCompletionChanged: _setTaskCompletion,
             ),
           },
         ),

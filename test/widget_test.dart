@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:final_project/main.dart';
+import 'package:final_project/models/aquarium.dart';
 import 'package:final_project/models/care_record.dart';
 import 'package:final_project/screens/care_screen.dart';
 
@@ -48,7 +49,66 @@ void main() {
 
     await tester.tap(find.text('History'));
     await tester.pump();
-    expect(find.text('No completed tasks'), findsOneWidget);
+    expect(find.text('No history yet'), findsOneWidget);
+  });
+
+  testWidgets('Care filters aquariums and shows calendar task overflow', (
+    tester,
+  ) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final aquariums = [
+      Aquarium(
+        name: 'Tank A',
+        type: AquariumType.freshwater,
+        volume: 40,
+        volumeUnit: 'L',
+        createdAt: today,
+      ),
+      Aquarium(
+        name: 'Tank B',
+        type: AquariumType.saltwater,
+        volume: 80,
+        volumeUnit: 'L',
+        createdAt: today,
+      ),
+    ];
+    CareTask task(String title, String tank, DateTime date) => CareTask(
+      title: title,
+      category: title,
+      aquariumName: tank,
+      dueAt: date,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CareScreen(
+          aquariums: aquariums,
+          tasks: [
+            for (var index = 0; index < 4; index++)
+              task('Today $index', 'Tank A', today),
+            task('Other tank today', 'Tank B', today),
+            task('Tomorrow', 'Tank A', today.add(const Duration(days: 1))),
+            task(
+              'Outside horizon',
+              'Tank A',
+              today.add(const Duration(days: 8)),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tank A'), findsWidgets);
+    expect(find.text('Tank B'), findsWidgets);
+    await tester.tap(find.text('Tank A').first);
+    await tester.pumpAndSettle();
+    expect(find.text('DUE TODAY (4)'), findsOneWidget);
+    expect(find.text('UPCOMING — NEXT 7 DAYS (1)'), findsOneWidget);
+
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+    expect(find.text('+1'), findsOneWidget);
   });
 
   testWidgets('care add button offers activity and task flows', (tester) async {
@@ -134,10 +194,19 @@ void main() {
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
 
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Feed Fish'), findsNothing);
+
+    await tester.tap(find.text('Care'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Mark task complete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
     expect(find.text('Feed Fish'), findsOneWidget);
   });
 
-  testWidgets('logging water change updates dashboard status', (tester) async {
+  testWidgets('logging a preset activity updates Care history', (tester) async {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
@@ -153,12 +222,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Changed water'));
     await tester.pump();
+    expect(find.text('Category'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Cleaned filter'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Cleaned filter'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Save activity'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Home'));
+    await tester.tap(find.text('History'));
     await tester.pumpAndSettle();
-
-    expect(find.text('LAST WATER CHANGE'), findsOneWidget);
-    expect(find.text('No records yet'), findsOneWidget);
+    expect(find.text('Changed water'), findsOneWidget);
+    expect(find.text('Cleaned filter'), findsOneWidget);
   });
 }

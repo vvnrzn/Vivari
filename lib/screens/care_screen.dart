@@ -13,18 +13,25 @@ class CareScreen extends StatefulWidget {
   const CareScreen({
     this.aquariums = const [],
     this.tasks = const [],
+    this.activities = const [],
+    this.taskCompletions = const [],
     this.templates = const [],
     this.onTaskCreated,
     this.onActivityLogged,
+    this.onTaskCompletionChanged,
     super.key,
   });
 
   final List<Aquarium> aquariums;
   final List<CareTask> tasks;
+  final List<CareActivity> activities;
+  final List<CareTaskCompletion> taskCompletions;
   final List<ActivityTemplate> templates;
   final ValueChanged<CareTask>? onTaskCreated;
   final void Function(CareActivity activity, ActivityTemplate? template)?
   onActivityLogged;
+  final void Function(CareTask task, DateTime scheduledDate, bool completed)?
+  onTaskCompletionChanged;
 
   @override
   State<CareScreen> createState() => _CareScreenState();
@@ -32,6 +39,7 @@ class CareScreen extends StatefulWidget {
 
 class _CareScreenState extends State<CareScreen> {
   _CareView _selectedView = _CareView.list;
+  String? _selectedAquariumName;
 
   Future<void> _openAddOptions() async {
     final selection = await showModalBottomSheet<String>(
@@ -97,6 +105,26 @@ class _CareScreenState extends State<CareScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final aquariumName = _selectedAquariumName;
+    final tasks = aquariumName == null
+        ? widget.tasks
+        : widget.tasks
+              .where((task) => task.aquariumName == aquariumName)
+              .toList();
+    final activities = aquariumName == null
+        ? widget.activities
+        : widget.activities
+              .where((activity) => activity.aquariumName == aquariumName)
+              .toList();
+    final completions = aquariumName == null
+        ? widget.taskCompletions
+        : widget.taskCompletions
+              .where(
+                (completion) =>
+                    completion.task.aquariumName == aquariumName,
+              )
+              .toList();
+
     return Scaffold(
       backgroundColor: VivariColors.background,
       floatingActionButton: VivariAddButton(
@@ -119,13 +147,30 @@ class _CareScreenState extends State<CareScreen> {
               onChanged: (view) => setState(() => _selectedView = view),
             ),
             const SizedBox(height: AppSpacing.small),
-            const _AquariumFilter(),
+            _AquariumFilter(
+              aquariums: widget.aquariums,
+              selectedName: _selectedAquariumName,
+              onSelected: (name) =>
+                  setState(() => _selectedAquariumName = name),
+            ),
             const SizedBox(height: AppSpacing.large),
             switch (_selectedView) {
-              _CareView.list => _ListViewContent(tasks: widget.tasks),
-              _CareView.week => const _WeekViewContent(),
-              _CareView.month => const _MonthViewContent(),
-              _CareView.history => const _HistoryViewContent(),
+              _CareView.list => _ListViewContent(
+                tasks: tasks,
+                completions: completions,
+                onCompletionChanged: widget.onTaskCompletionChanged,
+              ),
+              _CareView.week => _WeekViewContent(
+                tasks: tasks,
+                completions: completions,
+                onCompletionChanged: widget.onTaskCompletionChanged,
+              ),
+              _CareView.month => _MonthViewContent(tasks: tasks),
+              _CareView.history => _HistoryViewContent(
+                activities: activities,
+                completions: completions,
+                onCompletionChanged: widget.onTaskCompletionChanged,
+              ),
             },
           ],
         ),
@@ -251,7 +296,15 @@ class _ViewSelector extends StatelessWidget {
 }
 
 class _AquariumFilter extends StatelessWidget {
-  const _AquariumFilter();
+  const _AquariumFilter({
+    required this.aquariums,
+    required this.selectedName,
+    required this.onSelected,
+  });
+
+  final List<Aquarium> aquariums;
+  final String? selectedName;
+  final ValueChanged<String?> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -261,8 +314,22 @@ class _AquariumFilter extends StatelessWidget {
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: const Row(
-            children: [_CompactPill(label: 'All Tanks', selected: true)],
+          child: Row(
+            children: [
+              _CompactPill(
+                label: 'All Tanks',
+                selected: selectedName == null,
+                onPressed: () => onSelected(null),
+              ),
+              for (final aquarium in aquariums) ...[
+                const SizedBox(width: 8),
+                _CompactPill(
+                  label: aquarium.name,
+                  selected: selectedName == aquarium.name,
+                  onPressed: () => onSelected(aquarium.name),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -325,50 +392,68 @@ class _CompactPill extends StatelessWidget {
   }
 }
 
+typedef _TaskOccurrence = ({CareTask task, DateTime date});
+
 class _ListViewContent extends StatelessWidget {
-  const _ListViewContent({required this.tasks});
+  const _ListViewContent({
+    required this.tasks,
+    required this.completions,
+    required this.onCompletionChanged,
+  });
 
   final List<CareTask> tasks;
+  final List<CareTaskCompletion> completions;
+  final void Function(CareTask task, DateTime date, bool completed)?
+  onCompletionChanged;
 
   @override
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(DateTime.now());
-    final dueToday = tasks.where((task) => task.isDueOn(today)).toList();
     final overdue = tasks
         .where(
           (task) =>
-              !task.isDueOn(today) &&
-              !task.dueAt.isAfter(DateTime.now()) &&
-              task.recurrence == TaskRecurrence.none,
+              task.recurrence == TaskRecurrence.none &&
+              DateUtils.dateOnly(task.dueAt).isBefore(today),
         )
+        .map((task) => (task: task, date: DateUtils.dateOnly(task.dueAt)))
         .toList();
-    final upcoming = tasks
-        .where(
-          (task) =>
-              task.dueAt.isAfter(today) &&
-              task.dueAt.isBefore(today.add(const Duration(days: 8))),
-        )
+    final dueToday = tasks
+        .where((task) => task.isDueOn(today))
+        .map((task) => (task: task, date: today))
         .toList();
+    final upcoming = <_TaskOccurrence>[];
+    for (var offset = 1; offset <= 7; offset++) {
+      final date = today.add(Duration(days: offset));
+      for (final task in tasks.where((task) => task.isDueOn(date))) {
+        upcoming.add((task: task, date: date));
+      }
+    }
 
     return Column(
       children: [
         _TaskSection(
           title: 'OVERDUE',
-          count: overdue.length,
+          occurrences: overdue,
+          completions: completions,
+          onCompletionChanged: onCompletionChanged,
+          indicatorColor: VivariColors.error,
           titleColor: VivariColors.error,
-          tasks: overdue,
         ),
-        SizedBox(height: AppSpacing.medium),
+        const SizedBox(height: AppSpacing.medium),
         _TaskSection(
           title: 'DUE TODAY',
-          count: dueToday.length,
-          tasks: dueToday,
+          occurrences: dueToday,
+          completions: completions,
+          onCompletionChanged: onCompletionChanged,
+          indicatorColor: VivariColors.warning,
         ),
-        SizedBox(height: AppSpacing.medium),
+        const SizedBox(height: AppSpacing.medium),
         _TaskSection(
           title: 'UPCOMING — NEXT 7 DAYS',
-          count: upcoming.length,
-          tasks: upcoming,
+          occurrences: upcoming,
+          completions: completions,
+          onCompletionChanged: onCompletionChanged,
+          indicatorColor: VivariColors.textMuted,
         ),
       ],
     );
@@ -378,14 +463,19 @@ class _ListViewContent extends StatelessWidget {
 class _TaskSection extends StatelessWidget {
   const _TaskSection({
     required this.title,
-    required this.count,
-    this.tasks = const [],
+    required this.occurrences,
+    required this.completions,
+    required this.onCompletionChanged,
+    required this.indicatorColor,
     this.titleColor,
   });
 
   final String title;
-  final int count;
-  final List<CareTask> tasks;
+  final List<_TaskOccurrence> occurrences;
+  final List<CareTaskCompletion> completions;
+  final void Function(CareTask task, DateTime date, bool completed)?
+  onCompletionChanged;
+  final Color indicatorColor;
   final Color? titleColor;
 
   @override
@@ -396,7 +486,7 @@ class _TaskSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$title ($count)',
+          '$title (${occurrences.length})',
           style: textTheme.labelSmall?.copyWith(
             color: titleColor ?? VivariColors.textMuted,
             fontWeight: FontWeight.w700,
@@ -408,30 +498,28 @@ class _TaskSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.medium,
-            vertical: 18,
+            vertical: 12,
           ),
           decoration: BoxDecoration(
             color: VivariColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: VivariColors.border),
           ),
-          child: tasks.isEmpty
+          child: occurrences.isEmpty
               ? Text('No tasks', style: textTheme.bodySmall)
               : Column(
                   children: [
-                    for (final task in tasks)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(task.title),
-                        subtitle: task.aquariumName.isEmpty
-                            ? null
-                            : Text(task.aquariumName),
-                        trailing: Text(
-                          MaterialLocalizations.of(
-                            context,
-                          ).formatTimeOfDay(TimeOfDay.fromDateTime(task.dueAt)),
-                          style: textTheme.bodySmall,
+                    for (final occurrence in occurrences)
+                      _TaskCard(
+                        task: occurrence.task,
+                        date: occurrence.date,
+                        completed: _isCompleted(
+                          completions,
+                          occurrence.task,
+                          occurrence.date,
                         ),
+                        onChanged: onCompletionChanged,
+                        indicatorColor: indicatorColor,
                       ),
                   ],
                 ),
@@ -441,8 +529,111 @@ class _TaskSection extends StatelessWidget {
   }
 }
 
+bool _isCompleted(
+  List<CareTaskCompletion> completions,
+  CareTask task,
+  DateTime date,
+) => completions.any(
+  (completion) =>
+      identical(completion.task, task) &&
+      DateUtils.isSameDay(completion.scheduledDate, date),
+);
+
+class _TaskCard extends StatelessWidget {
+  const _TaskCard({
+    required this.task,
+    required this.date,
+    required this.completed,
+    required this.onChanged,
+    required this.indicatorColor,
+  });
+
+  final CareTask task;
+  final DateTime date;
+  final bool completed;
+  final void Function(CareTask task, DateTime date, bool completed)? onChanged;
+  final Color indicatorColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final dueAt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      task.dueAt.hour,
+      task.dueAt.minute,
+    );
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: IconButton(
+        tooltip: completed ? 'Mark task incomplete' : 'Mark task complete',
+        onPressed: onChanged == null
+            ? null
+            : () => onChanged!(task, date, !completed),
+        icon: _TaskRadioIndicator(
+          completed: completed,
+          color: completed ? VivariColors.primary : indicatorColor,
+        ),
+      ),
+      title: Text(
+        task.title,
+        style: completed
+            ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                decoration: TextDecoration.lineThrough,
+                color: VivariColors.textMuted,
+              )
+            : null,
+      ),
+      subtitle: task.aquariumName.isEmpty ? null : Text(task.aquariumName),
+      trailing: Text(
+        MaterialLocalizations.of(
+          context,
+        ).formatTimeOfDay(TimeOfDay.fromDateTime(dueAt)),
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
+  }
+}
+
+class _TaskRadioIndicator extends StatelessWidget {
+  const _TaskRadioIndicator({required this.completed, required this.color});
+
+  final bool completed;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 16,
+    height: 16,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 1),
+      ),
+      child: completed
+          ? Center(
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+            )
+          : null,
+    ),
+  );
+}
+
 class _WeekViewContent extends StatelessWidget {
-  const _WeekViewContent();
+  const _WeekViewContent({
+    required this.tasks,
+    required this.completions,
+    required this.onCompletionChanged,
+  });
+
+  final List<CareTask> tasks;
+  final List<CareTaskCompletion> completions;
+  final void Function(CareTask task, DateTime date, bool completed)?
+  onCompletionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -454,6 +645,9 @@ class _WeekViewContent extends StatelessWidget {
           _WeekDay(
             date: today.add(Duration(days: offset)),
             isToday: offset == 0,
+            tasks: tasks,
+            completions: completions,
+            onCompletionChanged: onCompletionChanged,
           ),
           if (offset < 6) const SizedBox(height: AppSpacing.small),
         ],
@@ -463,10 +657,20 @@ class _WeekViewContent extends StatelessWidget {
 }
 
 class _WeekDay extends StatelessWidget {
-  const _WeekDay({required this.date, required this.isToday});
+  const _WeekDay({
+    required this.date,
+    required this.isToday,
+    required this.tasks,
+    required this.completions,
+    required this.onCompletionChanged,
+  });
 
   final DateTime date;
   final bool isToday;
+  final List<CareTask> tasks;
+  final List<CareTaskCompletion> completions;
+  final void Function(CareTask task, DateTime date, bool completed)?
+  onCompletionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -482,6 +686,7 @@ class _WeekDay extends StatelessWidget {
     final foreground = isToday
         ? VivariColors.background
         : VivariColors.textPrimary;
+    final dueTasks = tasks.where((task) => task.isDueOn(date)).toList();
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.medium),
@@ -490,37 +695,52 @@ class _WeekDay extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: VivariColors.border),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isToday ? VivariColors.primary : VivariColors.secondary,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '${date.day}',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: foreground,
-                fontWeight: FontWeight.w700,
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isToday ? VivariColors.primary : VivariColors.secondary,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${date.day}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
+              const SizedBox(width: AppSpacing.small),
+              Expanded(
+                child: Text(
+                  isToday ? 'Today' : weekday,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (dueTasks.isEmpty)
+                Text(
+                  '-',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+            ],
+          ),
+          for (final task in dueTasks)
+            _TaskCard(
+              task: task,
+              date: date,
+              completed: _isCompleted(completions, task, date),
+              onChanged: onCompletionChanged,
+              indicatorColor: isToday
+                  ? VivariColors.warning
+                  : VivariColors.textMuted,
             ),
-          ),
-          const SizedBox(width: AppSpacing.small),
-          Expanded(
-            child: Text(
-              isToday ? 'Today' : weekday,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Text(
-            '-',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
         ],
       ),
     );
@@ -528,7 +748,9 @@ class _WeekDay extends StatelessWidget {
 }
 
 class _MonthViewContent extends StatefulWidget {
-  const _MonthViewContent();
+  const _MonthViewContent({required this.tasks});
+
+  final List<CareTask> tasks;
 
   @override
   State<_MonthViewContent> createState() => _MonthViewContentState();
@@ -637,7 +859,17 @@ class _MonthViewContentState extends State<_MonthViewContent> {
                       _displayedMonth.year == _today.year &&
                       _displayedMonth.month == _today.month &&
                       day == _today.day,
-                  hasTasks: false,
+                  taskCount: widget.tasks
+                      .where(
+                        (task) => task.isDueOn(
+                          DateTime(
+                            _displayedMonth.year,
+                            _displayedMonth.month,
+                            day,
+                          ),
+                        ),
+                      )
+                      .length,
                 ),
             ],
           ),
@@ -651,12 +883,12 @@ class _CalendarDay extends StatelessWidget {
   const _CalendarDay({
     required this.day,
     required this.selected,
-    required this.hasTasks,
+    required this.taskCount,
   });
 
   final int day;
   final bool selected;
-  final bool hasTasks;
+  final int taskCount;
 
   @override
   Widget build(BuildContext context) {
@@ -669,7 +901,7 @@ class _CalendarDay extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? VivariColors.primary : Colors.transparent,
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
             '$day',
@@ -682,26 +914,85 @@ class _CalendarDay extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 3),
-        SizedBox(
-          width: 4,
-          height: 4,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: hasTasks ? VivariColors.primary : Colors.transparent,
-              shape: BoxShape.circle,
+        if (taskCount > 0)
+          SizedBox(
+            height: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var dot = 0; dot < taskCount.clamp(0, 3); dot++) ...[
+                  if (dot > 0) const SizedBox(width: 2),
+                  Container(
+                    width: 3,
+                    height: 3,
+                    decoration: const BoxDecoration(
+                      color: VivariColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+                if (taskCount > 3) ...[
+                  const SizedBox(width: 2),
+                  Text(
+                    '+${taskCount - 3}',
+                    style: const TextStyle(
+                      color: VivariColors.primary,
+                      fontSize: 8,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
-        ),
+          )
+        else
+          const SizedBox(height: 10),
       ],
     );
   }
 }
 
 class _HistoryViewContent extends StatelessWidget {
-  const _HistoryViewContent();
+  const _HistoryViewContent({
+    required this.activities,
+    required this.completions,
+    required this.onCompletionChanged,
+  });
+
+  final List<CareActivity> activities;
+  final List<CareTaskCompletion> completions;
+  final void Function(CareTask task, DateTime date, bool completed)?
+  onCompletionChanged;
 
   @override
   Widget build(BuildContext context) {
+    final entries = <({DateTime date, Widget child})>[
+      for (final activity in activities)
+        (
+          date: activity.loggedAt,
+          child: _ActivityHistoryCard(activity: activity),
+        ),
+      for (final completion in completions)
+        (
+          date: completion.completedAt,
+          child: _CompletedTaskHistoryCard(
+            completion: completion,
+            onCompletionChanged: onCompletionChanged,
+          ),
+        ),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    if (entries.isNotEmpty) {
+      return Column(
+        children: [
+          for (final entry in entries) ...[
+            entry.child,
+            const SizedBox(height: AppSpacing.small),
+          ],
+        ],
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -718,12 +1009,12 @@ class _HistoryViewContent extends StatelessWidget {
           const Icon(Icons.history, color: VivariColors.primary, size: 28),
           const SizedBox(height: AppSpacing.small),
           Text(
-            'No completed tasks',
+            'No history yet',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            'Completed care tasks will appear here.',
+            'Logged activities and completed care tasks will appear here.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -731,4 +1022,103 @@ class _HistoryViewContent extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ActivityHistoryCard extends StatelessWidget {
+  const _ActivityHistoryCard({required this.activity});
+
+  final CareActivity activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final details = [
+      activity.category,
+      if (activity.aquariumName.isNotEmpty) activity.aquariumName,
+      localizations.formatShortDate(activity.loggedAt),
+    ].join(' · ');
+
+    return _HistoryCard(
+      title: activity.name,
+      subtitle: details,
+      checked: true,
+      indicatorColor: VivariColors.primary,
+    );
+  }
+}
+
+class _CompletedTaskHistoryCard extends StatelessWidget {
+  const _CompletedTaskHistoryCard({
+    required this.completion,
+    required this.onCompletionChanged,
+  });
+
+  final CareTaskCompletion completion;
+  final void Function(CareTask task, DateTime date, bool completed)?
+  onCompletionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final details = [
+      completion.task.category,
+      if (completion.task.aquariumName.isNotEmpty)
+        completion.task.aquariumName,
+      localizations.formatShortDate(completion.scheduledDate),
+    ].join(' · ');
+
+    return _HistoryCard(
+      title: completion.task.title,
+      subtitle: details,
+      checked: true,
+      indicatorColor: VivariColors.primary,
+      onPressed: onCompletionChanged == null
+          ? null
+          : () => onCompletionChanged!(
+              completion.task,
+              completion.scheduledDate,
+              false,
+            ),
+      tooltip: 'Mark task incomplete',
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({
+    required this.title,
+    required this.subtitle,
+    required this.checked,
+    required this.indicatorColor,
+    this.onPressed,
+    this.tooltip,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool checked;
+  final Color indicatorColor;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: VivariColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: VivariColors.border),
+    ),
+    child: ListTile(
+      leading: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: _TaskRadioIndicator(
+          completed: checked,
+          color: indicatorColor,
+        ),
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle),
+    ),
+  );
 }

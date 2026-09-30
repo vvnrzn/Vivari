@@ -324,22 +324,17 @@ class _RecurringEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final option in _options) ...[
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(option.label),
-                    selected: selected == option.value,
-                    onSelected: (_) => onSelected(option.value),
-                  ),
-                ),
-              ],
-            ],
-          ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final option in _options)
+              ChoiceChip(
+                label: Text(option.label),
+                selected: selected == option.value,
+                onSelected: (_) => onSelected(option.value),
+              ),
+          ],
         ),
         const SizedBox(height: 16),
         if (selected == TaskRecurrence.basic) ...[
@@ -355,10 +350,12 @@ class _RecurringEditor extends StatelessWidget {
             ],
           ),
         ] else if (selected == TaskRecurrence.customInterval) ...[
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text('Every'),
-              const SizedBox(width: 12),
               SizedBox(
                 width: 84,
                 child: TextFormField(
@@ -376,25 +373,12 @@ class _RecurringEditor extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (final unit in _units)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: ChoiceChip(
-                            label: Text(unit.toLowerCase()),
-                            selected: recurrenceUnit == unit,
-                            onSelected: (_) => onUnitSelected(unit),
-                          ),
-                        ),
-                    ],
-                  ),
+              for (final unit in _units)
+                ChoiceChip(
+                  label: Text(unit.toLowerCase()),
+                  selected: recurrenceUnit == unit,
+                  onSelected: (_) => onUnitSelected(unit),
                 ),
-              ),
             ],
           ),
         ] else if (selected == TaskRecurrence.weekdays) ...[
