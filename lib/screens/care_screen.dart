@@ -1,3 +1,5 @@
+import 'package:flutter/gestures.dart'
+    show GestureBinding, PointerScrollEvent, PointerSignalEvent;
 import 'package:flutter/material.dart';
 
 import '../models/aquarium.dart';
@@ -120,8 +122,7 @@ class _CareScreenState extends State<CareScreen> {
         ? widget.taskCompletions
         : widget.taskCompletions
               .where(
-                (completion) =>
-                    completion.task.aquariumName == aquariumName,
+                (completion) => completion.task.aquariumName == aquariumName,
               )
               .toList();
 
@@ -295,7 +296,7 @@ class _ViewSelector extends StatelessWidget {
   }
 }
 
-class _AquariumFilter extends StatelessWidget {
+class _AquariumFilter extends StatefulWidget {
   const _AquariumFilter({
     required this.aquariums,
     required this.selectedName,
@@ -307,29 +308,73 @@ class _AquariumFilter extends StatelessWidget {
   final ValueChanged<String?> onSelected;
 
   @override
+  State<_AquariumFilter> createState() => _AquariumFilterState();
+}
+
+class _AquariumFilterState extends State<_AquariumFilter> {
+  final _scrollController = ScrollController();
+
+  void _scrollBy(double delta) {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    _scrollController.jumpTo(
+      (position.pixels + delta).clamp(0.0, position.maxScrollExtent),
+    );
+  }
+
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is PointerScrollEvent) {
+      GestureBinding.instance.pointerSignalResolver.register(event, (event) {
+        final scrollEvent = event as PointerScrollEvent;
+        final delta = scrollEvent.scrollDelta.dx != 0
+            ? scrollEvent.scrollDelta.dx
+            : scrollEvent.scrollDelta.dy;
+        _scrollBy(delta);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Semantics(
       label: 'Aquarium Filter',
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _CompactPill(
-                label: 'All Tanks',
-                selected: selectedName == null,
-                onPressed: () => onSelected(null),
+      child: SizedBox(
+        height: 52,
+        child: Listener(
+          onPointerSignal: _handlePointerSignal,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: (details) => _scrollBy(-details.delta.dx),
+            child: SingleChildScrollView(
+              key: const ValueKey('aquarium-filter-scroll-view'),
+              controller: _scrollController,
+              physics: const NeverScrollableScrollPhysics(),
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  _CompactPill(
+                    label: 'All Tanks',
+                    selected: widget.selectedName == null,
+                    onPressed: () => widget.onSelected(null),
+                  ),
+                  for (final aquarium in widget.aquariums) ...[
+                    const SizedBox(width: 8),
+                    _CompactPill(
+                      label: aquarium.name,
+                      selected: widget.selectedName == aquarium.name,
+                      onPressed: () => widget.onSelected(aquarium.name),
+                    ),
+                  ],
+                ],
               ),
-              for (final aquarium in aquariums) ...[
-                const SizedBox(width: 8),
-                _CompactPill(
-                  label: aquarium.name,
-                  selected: selectedName == aquarium.name,
-                  onPressed: () => onSelected(aquarium.name),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -704,7 +749,9 @@ class _WeekDay extends StatelessWidget {
                 height: 32,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: isToday ? VivariColors.primary : VivariColors.secondary,
+                  color: isToday
+                      ? VivariColors.primary
+                      : VivariColors.secondary,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
@@ -1062,8 +1109,7 @@ class _CompletedTaskHistoryCard extends StatelessWidget {
     final localizations = MaterialLocalizations.of(context);
     final details = [
       completion.task.category,
-      if (completion.task.aquariumName.isNotEmpty)
-        completion.task.aquariumName,
+      if (completion.task.aquariumName.isNotEmpty) completion.task.aquariumName,
       localizations.formatShortDate(completion.scheduledDate),
     ].join(' · ');
 
@@ -1112,10 +1158,7 @@ class _HistoryCard extends StatelessWidget {
       leading: IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
-        icon: _TaskRadioIndicator(
-          completed: checked,
-          color: indicatorColor,
-        ),
+        icon: _TaskRadioIndicator(completed: checked, color: indicatorColor),
       ),
       title: Text(title),
       subtitle: Text(subtitle),

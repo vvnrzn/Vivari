@@ -4,6 +4,7 @@
 // You are not required to write more of these, but a project with a few real
 // tests reads very differently from one with none.
 
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -109,6 +110,62 @@ void main() {
     await tester.tap(find.text('Month'));
     await tester.pumpAndSettle();
     expect(find.text('+1'), findsOneWidget);
+  });
+
+  testWidgets('aquarium filter scrolls horizontally through all tanks', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final today = DateUtils.dateOnly(DateTime.now());
+    final aquariums = [
+      for (var index = 1; index <= 6; index++)
+        Aquarium(
+          name: 'Display Tank $index',
+          type: AquariumType.freshwater,
+          volume: 40,
+          volumeUnit: 'L',
+          createdAt: today,
+        ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(home: CareScreen(aquariums: aquariums)),
+    );
+    await tester.pumpAndSettle();
+
+    final filterScrollView = find.byKey(
+      const ValueKey('aquarium-filter-scroll-view'),
+    );
+    expect(filterScrollView, findsOneWidget);
+    final filterScrollable = find.descendant(
+      of: filterScrollView,
+      matching: find.byType(Scrollable),
+    );
+    expect(
+      tester.state<ScrollableState>(filterScrollable).position.maxScrollExtent,
+      greaterThan(0),
+    );
+
+    await tester.drag(
+      filterScrollView,
+      const Offset(-2000, 0),
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.state<ScrollableState>(filterScrollable).position.pixels,
+      greaterThan(0),
+    );
+    final lastPill = tester.getRect(find.text('Display Tank 6'));
+    final filterViewport = tester.getRect(filterScrollView);
+    expect(lastPill.left, greaterThanOrEqualTo(filterViewport.left));
+    expect(lastPill.right, lessThanOrEqualTo(filterViewport.right));
+    expect(lastPill.top, greaterThanOrEqualTo(filterViewport.top));
+    expect(lastPill.bottom, lessThanOrEqualTo(filterViewport.bottom));
   });
 
   testWidgets('care add button offers activity and task flows', (tester) async {
