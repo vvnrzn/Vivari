@@ -108,7 +108,7 @@ class _VivariShellState extends State<VivariShell> {
         builder: (_) => AnimatedBuilder(
           animation: _dataChanges,
           builder: (context, child) => switch (index) {
-            0 => const ParametersScreen(),
+            0 => ParametersScreen(aquariums: _aquariums),
             1 => HomeDashboard(
               onSelectTab: _selectTab,
               aquariums: _aquariums,
