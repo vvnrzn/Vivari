@@ -20,9 +20,10 @@ At least six entries. One per real use. Every entry needs a commit link.
 
 ### 2026-09-30 Construct care screen activity log and task creation
 - **Tool:** Copilot
-- **What I asked for:** Add an activity logging flow and the basic task creation flow, then connect the saved information to the Home dashboard.
-- **What it gave back:** It added a “What would you like to add?” chooser from the floating button and built an activity logging flow with aquarium selection, preset activities, custom activities, categories, amount and unit selection, notes, and a date picker. It also built a task creation form with four recurring schedule options. Shared activity, task, and template records were added, and app-level state was connected across the care screens. The Home dashboard was updated to show tasks due today and reflect water-change or dosing activity based on its date and aquarium. Tests were added for the flows, dashboard integration, and recurring schedules.
-- **Commit:** 
+- **What I asked for:** Add an activity logging flow and the basic task creation flow, then connect the saved information to the Home dashboard and Care screen views.
+- **What it gave back:** The assistant delivered modular Flutter source files—including care_screen.dart, log_activity_screen.dart, add_task_screen.dart, home_dashboard.dart, and care_record.dart—complete with state wiring, recurring schedule tabs, calendar grids, unit selection modals, and dashboard synchronization.
+- **What I kept, what I changed, and why:** I kept the core architecture and cross-screen state binding because they successfully connected dashboard metrics and care schedules, but I modified specific UI and logic elements like enabling multi-select pre-made activities, stripping redundant category inputs, restyling calendar highlights into soft rounded squares with capped indicator dots, and adding dynamic tank filter generation to ensure a cleaner, highly intuitive user experience.
+- **Commit:** https://github.com/vvnrzn/Vivari/commit/158c8c31ababb4981daa3b094c9c470447c00988
 
 ### -- 
 - **Tool:** 
