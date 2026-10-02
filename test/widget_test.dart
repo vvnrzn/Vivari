@@ -34,14 +34,14 @@ void main() {
     expect(find.text('SCHEDULE'), findsOneWidget);
     expect(find.text('Care'), findsOneWidget);
     expect(find.text('All Tanks'), findsOneWidget);
-    expect(find.text('OVERDUE (0)'), findsOneWidget);
+    expect(find.text('OVERDUE (0)'), findsNothing);
     expect(find.text('DUE TODAY (0)'), findsOneWidget);
     expect(find.text('UPCOMING — NEXT 7 DAYS (0)'), findsOneWidget);
 
     await tester.tap(find.text('Week'));
     await tester.pump();
     expect(find.text('Today'), findsOneWidget);
-    expect(find.text('-'), findsNWidgets(7));
+    expect(find.text('-'), findsNothing);
 
     await tester.tap(find.text('Month'));
     await tester.pump();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/aquarium.dart';
 import '../models/care_record.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aquarium_multi_select_sheet.dart';
 import '../widgets/vivari_card.dart';
 
 class LogActivityScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime _date = DateTime.now();
-  Aquarium? _aquarium;
+  final Set<Aquarium> _aquariums = {};
   final Set<String> _selectedActivities = {};
   String _category = 'Maintenance';
   String? _unit;
@@ -90,29 +91,18 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
 
   Future<void> _pickAquarium() async {
     if (widget.aquariums.isEmpty) return;
-    final aquarium = await showModalBottomSheet<Aquarium>(
+    final aquariums = await showAquariumMultiSelectSheet(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (final aquarium in widget.aquariums)
-              ListTile(
-                title: Text(aquarium.name),
-                subtitle: Text(
-                  '${aquarium.volume.toStringAsFixed(0)} ${aquarium.volumeUnit}',
-                ),
-                trailing: _aquarium == aquarium
-                    ? const Icon(Icons.check)
-                    : null,
-                onTap: () => Navigator.pop(context, aquarium),
-              ),
-          ],
-        ),
-      ),
+      aquariums: widget.aquariums,
+      selectedAquariums: _aquariums,
     );
-    if (aquarium != null) setState(() => _aquarium = aquarium);
+    if (aquariums != null) {
+      setState(() {
+        _aquariums
+          ..clear()
+          ..addAll(aquariums);
+      });
+    }
   }
 
   Future<void> _pickUnit() async {
@@ -165,6 +155,9 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
     final amount = _amountController.text.trim();
     final note = _noteController.text.trim();
 
+    final selectedAquariums = _aquariums.isEmpty
+        ? <Aquarium?>[null]
+        : _aquariums.toList();
     for (final selectedActivity in _selectedActivities) {
       final name = selectedActivity == 'Custom activity'
           ? customName
@@ -172,25 +165,28 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
       final category = selectedActivity == 'Custom activity'
           ? _category
           : _categoryFor(selectedActivity);
-      final activity = CareActivity(
-        name: name,
-        category: category,
-        aquariumName: _aquarium?.name ?? '',
-        loggedAt: loggedAt,
-        amount: amount.isEmpty ? null : amount,
-        unit: _unit,
-        note: note.isEmpty ? null : note,
-      );
-      final template = _saveAsTemplate
-          ? ActivityTemplate(
-              name: name,
-              category: category,
-              amount: activity.amount,
-              unit: activity.unit,
-              note: activity.note,
-            )
-          : null;
-      widget.onSaved(activity, template);
+      for (var index = 0; index < selectedAquariums.length; index++) {
+        final aquarium = selectedAquariums[index];
+        final activity = CareActivity(
+          name: name,
+          category: category,
+          aquariumName: aquarium?.name ?? '',
+          loggedAt: loggedAt,
+          amount: amount.isEmpty ? null : amount,
+          unit: _unit,
+          note: note.isEmpty ? null : note,
+        );
+        final template = _saveAsTemplate && index == 0
+            ? ActivityTemplate(
+                name: name,
+                category: category,
+                amount: activity.amount,
+                unit: activity.unit,
+                note: activity.note,
+              )
+            : null;
+        widget.onSaved(activity, template);
+      }
     }
     Navigator.of(context).pop();
   }
@@ -228,10 +224,14 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
           const SizedBox(height: 8),
           _SelectCard(
             icon: Icons.water_outlined,
-            title: _aquarium?.name ?? 'Select an aquarium',
-            subtitle: _aquarium == null
-                ? 'Choose where this activity happened'
-                : '${_aquarium!.volume.toStringAsFixed(0)} ${_aquarium!.volumeUnit}',
+            title: _aquariums.isEmpty
+                ? 'Select aquarium(s)'
+                : _aquariums.map((aquarium) => aquarium.name).join(', '),
+            subtitle: _aquariums.length > 1
+                ? '${_aquariums.length} aquariums selected'
+                : _aquariums.firstOrNull == null
+                ? null
+                : '${_aquariums.first.volume.toStringAsFixed(0)} ${_aquariums.first.volumeUnit}',
             onTap: _pickAquarium,
           ),
           const SizedBox(height: 18),

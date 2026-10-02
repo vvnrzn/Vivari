@@ -1,15 +1,6 @@
 # AI usage
 
-This project was built with AI assistance. This file is the record of it. It is
-graded as the finals badge, and it is worth 100 points.
-
-Start it in week 1 and keep it up as you go. The commit history of this file is
-part of the evidence: a file written all at once the night before the deadline
-looks exactly like what it is.
-
 ## 1. How I used AI
-
-At least six entries. One per real use. Every entry needs a commit link.
 
 ### 2026-09-23 Built initial home screen dashboard
 - **Tool:** Copilot
@@ -25,10 +16,10 @@ At least six entries. One per real use. Every entry needs a commit link.
 - **What I kept, what I changed, and why:** I kept the core architecture and cross-screen state binding because they successfully connected dashboard metrics and care schedules, but I modified specific UI and logic elements like enabling multi-select pre-made activities, stripping redundant category inputs, restyling calendar highlights into soft rounded squares with capped indicator dots, and adding dynamic tank filter generation to ensure a cleaner, highly intuitive user experience.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/158c8c31ababb4981daa3b094c9c470447c00988
 
-### -- 
-- **Tool:** 
-- **What I asked for:**
-- **What it gave back:** 
+### 2026-10-01
+- **Tool:** Codex
+- **What I asked for:** I requested the creation of a three-view Parameters section, including a base dashboard, a detailed chart screen limited to week and month views, and a draggable settings modal. I specifically asked to implement a horizontal tank scroller without an "All Tanks" option, reusable status badges indicating if values are within or outside target ranges, and the ability to toggle a comprehensive list of additional water parameters. Finally, I directed the assistant to include a range customization pop-up accessible from the settings list to easily define the minimum and maximum optimal values for any parameter.
+- **What it gave back:** provided the correct navigational flow and functional logic, but it failed to maintain consistent UI styling, particularly regarding the border radius of the pill buttons. The generated code also resulted in a RenderFlex overflow error, indicating layout constraints were not handled properly. Additionally, the Parameter Details screen lacked proper top padding or safe area implementation.
 - **What I kept, what I changed, and why:** 
 - **Commit:** 
 
@@ -55,9 +46,6 @@ At least six entries. One per real use. Every entry needs a commit link.
 
 ## 2. Where the AI got it wrong
 
-Three cases. Be specific. If you write that the AI was never wrong, this section
-scores zero.
-
 ### Case 1 - Care screen layout overflow
 
 - **What it gave me:** Copilot generated a Care screen with multiple views, but the layout displayed them incorrectly: one view was squeezed and part of the Week view peeked in from the right. The screen also produced vertical RenderFlex overflow errors, with content extending beyond the available space.
@@ -82,9 +70,6 @@ scores zero.
 
 At least a fifth of this project is code you wrote yourself. Name it, and explain
 it in your own words.
-
-> Group projects: give each member their own heading below, and use your GitHub
-> handle as the heading. You are graded on your own section.
 
 ### Written by me
 

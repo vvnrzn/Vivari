@@ -553,7 +553,7 @@ class ParameterStatusBadge extends StatelessWidget {
       ),
       ParameterStatus.noReading => (
         'No readings',
-        Icons.remove_rounded,
+        null,
         VivariColors.textMuted,
       ),
     };
@@ -570,14 +570,20 @@ class ParameterStatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: compact ? 11 : 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontSize: compact ? 10 : 11,
-              fontWeight: FontWeight.w600,
+          if (icon != null) ...[
+            Icon(icon, size: compact ? 11 : 14, color: color),
+            const SizedBox(width: 4),
+          ],
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontSize: compact ? 10 : 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -842,7 +848,10 @@ class _ParameterGridPainter extends CustomPainter {
       );
       final value = maximum - (maximum - minimum) * index / 4;
       final label = TextPainter(
-        text: TextSpan(text: '${_formatNumber(value)}$unit', style: textStyle),
+        text: TextSpan(
+          text: '${_formatAxisNumber(value)}$unit',
+          style: textStyle,
+        ),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: leftInset - 8);
       label.paint(
@@ -1116,12 +1125,31 @@ class _SettingsParameterCard extends StatelessWidget {
                 tooltip: 'Customize ${parameter.name} range',
                 onPressed: onEditRange,
                 icon: const Icon(Icons.settings_outlined, size: 17),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(28, 28),
+                  maximumSize: const Size(28, 28),
+                  padding: EdgeInsets.zero,
+                  side: BorderSide.none,
+                  shape: const CircleBorder(),
+                ),
               ),
               Switch.adaptive(
                 key: ValueKey('parameter-enabled-${parameter.id}'),
                 value: parameter.enabled,
                 onChanged: onEnabledChanged,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                trackColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return VivariColors.primary;
+                  }
+                  return VivariColors.border;
+                }),
+                thumbColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return VivariColors.background;
+                  }
+                  return VivariColors.textMuted;
+                }),
               ),
             ],
           ),
@@ -1307,3 +1335,8 @@ String _formatNumber(double value) {
       .replaceFirst(RegExp(r'0+$'), '')
       .replaceFirst(RegExp(r'\.$'), '');
 }
+
+String _formatAxisNumber(double value) => value
+    .toStringAsFixed(2)
+    .replaceFirst(RegExp(r'0+$'), '')
+    .replaceFirst(RegExp(r'\.$'), '');

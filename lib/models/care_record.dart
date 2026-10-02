@@ -6,6 +6,7 @@ class CareTask {
     required this.category,
     required this.aquariumName,
     required this.dueAt,
+    this.aquariumNames,
     this.recurrence = TaskRecurrence.none,
     this.recurrenceUnit = 'Days',
     this.recurrenceInterval = 1,
@@ -16,12 +17,19 @@ class CareTask {
   final String title;
   final String category;
   final String aquariumName;
+  final List<String>? aquariumNames;
   final DateTime dueAt;
   final TaskRecurrence recurrence;
   final String recurrenceUnit;
   final int recurrenceInterval;
   final Set<int> weekdays;
   final Set<int> monthDays;
+
+  List<String> get associatedAquariumNames =>
+      aquariumNames ?? (aquariumName.isEmpty ? const [] : [aquariumName]);
+
+  bool isAssociatedWithAquarium(String name) =>
+      associatedAquariumNames.contains(name);
 
   bool isDueOn(DateTime date) {
     final day = DateTime(date.year, date.month, date.day);

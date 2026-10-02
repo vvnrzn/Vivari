@@ -111,7 +111,7 @@ class _CareScreenState extends State<CareScreen> {
     final tasks = aquariumName == null
         ? widget.tasks
         : widget.tasks
-              .where((task) => task.aquariumName == aquariumName)
+              .where((task) => task.isAssociatedWithAquarium(aquariumName))
               .toList();
     final activities = aquariumName == null
         ? widget.activities
@@ -122,7 +122,8 @@ class _CareScreenState extends State<CareScreen> {
         ? widget.taskCompletions
         : widget.taskCompletions
               .where(
-                (completion) => completion.task.aquariumName == aquariumName,
+                (completion) =>
+                    completion.task.isAssociatedWithAquarium(aquariumName),
               )
               .toList();
 
@@ -458,7 +459,8 @@ class _ListViewContent extends StatelessWidget {
         .where(
           (task) =>
               task.recurrence == TaskRecurrence.none &&
-              DateUtils.dateOnly(task.dueAt).isBefore(today),
+              DateUtils.dateOnly(task.dueAt).isBefore(today) &&
+              !_isCompleted(completions, task, DateUtils.dateOnly(task.dueAt)),
         )
         .map((task) => (task: task, date: DateUtils.dateOnly(task.dueAt)))
         .toList();
@@ -476,21 +478,24 @@ class _ListViewContent extends StatelessWidget {
 
     return Column(
       children: [
-        _TaskSection(
-          title: 'OVERDUE',
-          occurrences: overdue,
-          completions: completions,
-          onCompletionChanged: onCompletionChanged,
-          indicatorColor: VivariColors.error,
-          titleColor: VivariColors.error,
-        ),
-        const SizedBox(height: AppSpacing.medium),
+        if (overdue.isNotEmpty) ...[
+          _TaskSection(
+            title: 'OVERDUE',
+            occurrences: overdue,
+            completions: completions,
+            onCompletionChanged: onCompletionChanged,
+            indicatorColor: VivariColors.error,
+            titleColor: VivariColors.error,
+          ),
+          const SizedBox(height: AppSpacing.medium),
+        ],
         _TaskSection(
           title: 'DUE TODAY',
           occurrences: dueToday,
           completions: completions,
           onCompletionChanged: onCompletionChanged,
           indicatorColor: VivariColors.warning,
+          titleColor: VivariColors.warning,
         ),
         const SizedBox(height: AppSpacing.medium),
         _TaskSection(
@@ -554,18 +559,28 @@ class _TaskSection extends StatelessWidget {
               ? Text('No tasks', style: textTheme.bodySmall)
               : Column(
                   children: [
-                    for (final occurrence in occurrences)
+                    for (
+                      var index = 0;
+                      index < occurrences.length;
+                      index++
+                    ) ...[
+                      if (index > 0)
+                        Divider(
+                          height: 1,
+                          color: VivariColors.textMuted.withValues(alpha: 0.18),
+                        ),
                       _TaskCard(
-                        task: occurrence.task,
-                        date: occurrence.date,
+                        task: occurrences[index].task,
+                        date: occurrences[index].date,
                         completed: _isCompleted(
                           completions,
-                          occurrence.task,
-                          occurrence.date,
+                          occurrences[index].task,
+                          occurrences[index].date,
                         ),
                         onChanged: onCompletionChanged,
                         indicatorColor: indicatorColor,
                       ),
+                    ],
                   ],
                 ),
         ),
@@ -612,29 +627,64 @@ class _TaskCard extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: IconButton(
         tooltip: completed ? 'Mark task incomplete' : 'Mark task complete',
+        style: IconButton.styleFrom(
+          minimumSize: const Size(32, 32),
+          maximumSize: const Size(32, 32),
+          padding: EdgeInsets.zero,
+          side: BorderSide.none,
+          shape: const CircleBorder(),
+        ),
         onPressed: onChanged == null
             ? null
             : () => onChanged!(task, date, !completed),
-        icon: _TaskRadioIndicator(
-          completed: completed,
-          color: completed ? VivariColors.primary : indicatorColor,
-        ),
+        icon: _TaskRadioIndicator(completed: completed, color: indicatorColor),
       ),
-      title: Text(
-        task.title,
-        style: completed
-            ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                decoration: TextDecoration.lineThrough,
-                color: VivariColors.textMuted,
-              )
-            : null,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            task.title,
+            style: completed
+                ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    decoration: TextDecoration.lineThrough,
+                    color: VivariColors.textMuted,
+                  )
+                : null,
+          ),
+          if (task.recurrence != TaskRecurrence.none) ...[
+            const SizedBox(height: 3),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.autorenew_rounded,
+                  color: VivariColors.primary,
+                  size: 13,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Recurring',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: VivariColors.primary,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
-      subtitle: task.aquariumName.isEmpty ? null : Text(task.aquariumName),
+      subtitle: task.associatedAquariumNames.isEmpty
+          ? null
+          : Text(task.associatedAquariumNames.join(', ')),
       trailing: Text(
         MaterialLocalizations.of(
           context,
         ).formatTimeOfDay(TimeOfDay.fromDateTime(dueAt)),
-        style: Theme.of(context).textTheme.bodySmall,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: indicatorColor),
       ),
     );
   }
@@ -648,23 +698,29 @@ class _TaskRadioIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: 16,
-    height: 16,
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: 1),
-      ),
-      child: completed
-          ? Center(
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    width: 18,
+    height: 18,
+    child: completed
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 1),
+                  ),
+                ),
               ),
-            )
-          : null,
-    ),
+              Icon(Icons.check_rounded, color: color, size: 12),
+            ],
+          )
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 1),
+            ),
+          ),
   );
 }
 
@@ -769,25 +825,24 @@ class _WeekDay extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              if (dueTasks.isEmpty)
-                Text(
-                  '-',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
             ],
           ),
-          for (final task in dueTasks)
+          for (var index = 0; index < dueTasks.length; index++) ...[
+            if (index > 0)
+              Divider(
+                height: 1,
+                color: VivariColors.textMuted.withValues(alpha: 0.18),
+              ),
             _TaskCard(
-              task: task,
+              task: dueTasks[index],
               date: date,
-              completed: _isCompleted(completions, task, date),
+              completed: _isCompleted(completions, dueTasks[index], date),
               onChanged: onCompletionChanged,
               indicatorColor: isToday
                   ? VivariColors.warning
                   : VivariColors.textMuted,
             ),
+          ],
         ],
       ),
     );
@@ -1013,60 +1068,77 @@ class _HistoryViewContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final cutoff = now.subtract(const Duration(days: 30));
     final entries = <({DateTime date, Widget child})>[
       for (final activity in activities)
-        (
-          date: activity.loggedAt,
-          child: _ActivityHistoryCard(activity: activity),
-        ),
-      for (final completion in completions)
-        (
-          date: completion.completedAt,
-          child: _CompletedTaskHistoryCard(
-            completion: completion,
-            onCompletionChanged: onCompletionChanged,
+        if (!activity.loggedAt.isBefore(cutoff) &&
+            !activity.loggedAt.isAfter(now))
+          (
+            date: activity.loggedAt,
+            child: _ActivityHistoryCard(activity: activity),
           ),
-        ),
+      for (final completion in completions)
+        if (!completion.completedAt.isBefore(cutoff) &&
+            !completion.completedAt.isAfter(now))
+          (
+            date: completion.completedAt,
+            child: _CompletedTaskHistoryCard(
+              completion: completion,
+              onCompletionChanged: onCompletionChanged,
+            ),
+          ),
     ]..sort((a, b) => b.date.compareTo(a.date));
 
-    if (entries.isNotEmpty) {
-      return Column(
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.small),
+          child: Text(
+            'Showing tasks and logs from the past 30 days.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        if (entries.isNotEmpty) ...[
           for (final entry in entries) ...[
             entry.child,
             const SizedBox(height: AppSpacing.small),
           ],
-        ],
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.medium,
-        vertical: 24,
-      ),
-      decoration: BoxDecoration(
-        color: VivariColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: VivariColors.border),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.history, color: VivariColors.primary, size: 28),
-          const SizedBox(height: AppSpacing.small),
-          Text(
-            'No history yet',
-            style: Theme.of(context).textTheme.titleMedium,
+        ] else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.medium,
+              vertical: 24,
+            ),
+            decoration: BoxDecoration(
+              color: VivariColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: VivariColors.border),
+            ),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.history,
+                  color: VivariColors.primary,
+                  size: 28,
+                ),
+                const SizedBox(height: AppSpacing.small),
+                Text(
+                  'No history yet',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Logged activities and completed care tasks will appear here.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Logged activities and completed care tasks will appear here.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -1109,7 +1181,8 @@ class _CompletedTaskHistoryCard extends StatelessWidget {
     final localizations = MaterialLocalizations.of(context);
     final details = [
       completion.task.category,
-      if (completion.task.aquariumName.isNotEmpty) completion.task.aquariumName,
+      if (completion.task.associatedAquariumNames.isNotEmpty)
+        completion.task.associatedAquariumNames.join(', '),
       localizations.formatShortDate(completion.scheduledDate),
     ].join(' · ');
 
@@ -1117,7 +1190,7 @@ class _CompletedTaskHistoryCard extends StatelessWidget {
       title: completion.task.title,
       subtitle: details,
       checked: true,
-      indicatorColor: VivariColors.primary,
+      indicatorColor: _taskStatusColor(completion.scheduledDate),
       onPressed: onCompletionChanged == null
           ? null
           : () => onCompletionChanged!(
@@ -1128,6 +1201,14 @@ class _CompletedTaskHistoryCard extends StatelessWidget {
       tooltip: 'Mark task incomplete',
     );
   }
+}
+
+Color _taskStatusColor(DateTime scheduledDate) {
+  final date = DateUtils.dateOnly(scheduledDate);
+  final today = DateUtils.dateOnly(DateTime.now());
+  if (date.isBefore(today)) return VivariColors.error;
+  if (date == today) return VivariColors.warning;
+  return VivariColors.textMuted;
 }
 
 class _HistoryCard extends StatelessWidget {
@@ -1157,6 +1238,13 @@ class _HistoryCard extends StatelessWidget {
     child: ListTile(
       leading: IconButton(
         tooltip: tooltip,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(32, 32),
+          maximumSize: const Size(32, 32),
+          padding: EdgeInsets.zero,
+          side: BorderSide.none,
+          shape: const CircleBorder(),
+        ),
         onPressed: onPressed,
         icon: _TaskRadioIndicator(completed: checked, color: indicatorColor),
       ),

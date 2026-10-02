@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/aquarium.dart';
 import '../models/care_record.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aquarium_multi_select_sheet.dart';
 import '../widgets/vivari_card.dart';
 
 class AddTaskScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _titleController = TextEditingController();
   DateTime _date = DateTime.now();
   TimeOfDay _time = TimeOfDay.now();
-  Aquarium? _aquarium;
+  final Set<Aquarium> _aquariums = {};
   String? _category;
   bool _recurring = false;
   TaskRecurrence _recurrence = TaskRecurrence.basic;
@@ -81,26 +82,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   Future<void> _pickAquarium() async {
     if (widget.aquariums.isEmpty) return;
-    final aquarium = await showModalBottomSheet<Aquarium>(
+    final aquariums = await showAquariumMultiSelectSheet(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (final aquarium in widget.aquariums)
-              ListTile(
-                title: Text(aquarium.name),
-                subtitle: Text(
-                  '${aquarium.volume.toStringAsFixed(0)} ${aquarium.volumeUnit}',
-                ),
-                onTap: () => Navigator.pop(context, aquarium),
-              ),
-          ],
-        ),
-      ),
+      aquariums: widget.aquariums,
+      selectedAquariums: _aquariums,
     );
-    if (aquarium != null) setState(() => _aquarium = aquarium);
+    if (aquariums != null) {
+      setState(() {
+        _aquariums
+          ..clear()
+          ..addAll(aquariums);
+      });
+    }
   }
 
   void _createTask() {
@@ -123,7 +116,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       CareTask(
         title: title,
         category: _category ?? 'Custom',
-        aquariumName: _aquarium?.name ?? '',
+        aquariumName: _aquariums.firstOrNull?.name ?? '',
+        aquariumNames: _aquariums.map((aquarium) => aquarium.name).toList(),
         dueAt: DateTime(
           _date.year,
           _date.month,
@@ -211,10 +205,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           const _SectionTitle('Aquarium'),
           const SizedBox(height: 8),
           _AquariumCard(
-            title: _aquarium?.name ?? 'Select an aquarium',
-            subtitle: _aquarium == null
-                ? 'Choose the aquarium for this task'
-                : '${_aquarium!.volume.toStringAsFixed(0)} ${_aquarium!.volumeUnit}',
+            title: _aquariums.isEmpty
+                ? 'Select aquarium(s)'
+                : _aquariums.map((aquarium) => aquarium.name).join(', '),
+            subtitle: _aquariums.length > 1
+                ? '${_aquariums.length} aquariums selected'
+                : _aquariums.firstOrNull == null
+                ? null
+                : '${_aquariums.first.volume.toStringAsFixed(0)} ${_aquariums.first.volumeUnit}',
             onTap: _pickAquarium,
           ),
           const SizedBox(height: 20),
@@ -509,12 +507,12 @@ class _CategoryButton extends StatelessWidget {
 class _AquariumCard extends StatelessWidget {
   const _AquariumCard({
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.onTap,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback onTap;
 
   @override
@@ -522,8 +520,10 @@ class _AquariumCard extends StatelessWidget {
     padding: EdgeInsets.zero,
     child: ListTile(
       leading: const Icon(Icons.water_outlined),
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     ),
