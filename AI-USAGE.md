@@ -16,19 +16,19 @@
 - **What I kept, what I changed, and why:** I kept the core architecture and cross-screen state binding because they successfully connected dashboard metrics and care schedules, but I modified specific UI and logic elements like enabling multi-select pre-made activities, stripping redundant category inputs, restyling calendar highlights into soft rounded squares with capped indicator dots, and adding dynamic tank filter generation to ensure a cleaner, highly intuitive user experience.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/158c8c31ababb4981daa3b094c9c470447c00988
 
-### 2026-10-01
+### 2026-10-01 Parameter setting configuration
 - **Tool:** Codex
 - **What I asked for:** I requested the creation of a three-view Parameters section, including a base dashboard, a detailed chart screen limited to week and month views, and a draggable settings modal. I specifically asked to implement a horizontal tank scroller without an "All Tanks" option, reusable status badges indicating if values are within or outside target ranges, and the ability to toggle a comprehensive list of additional water parameters. Finally, I directed the assistant to include a range customization pop-up accessible from the settings list to easily define the minimum and maximum optimal values for any parameter.
 - **What it gave back:** provided the correct navigational flow and functional logic, but it failed to maintain consistent UI styling, particularly regarding the border radius of the pill buttons. The generated code also resulted in a RenderFlex overflow error, indicating layout constraints were not handled properly. Additionally, the Parameter Details screen lacked proper top padding or safe area implementation.
 - **What I kept, what I changed, and why:** I made several UI adjustments to fix layouts and improve consistency. To resolve the RenderFlex overflows, I removed the "-" prefix from the "no readings" badge to save space (especially critical on the chart screens). I also implemented text truncation (adding "...") for lengthy aquarium names across the Parameters, Care, and Home dashboard screens to prevent the text from cramping the UI or wrapping awkwardly. Finally, to ensure visual consistency with the app's theme, I added SafeArea boundaries to fix the notch overlap, made the customize parameter settings button thinner, and updated the active toggle button colors to match the app's specific palette instead of using the default bright green.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/4cdd5bbc6574139cd5f19dc6ce39e199845e0427
 
-### Parameter Logging & Care Sy
+### 2026-10-04 Parameter Logging & Care Sync
 - **Tool:** Copilot
 - **What I asked for:** I requested the implementation of the Log Parameter screen based on the provided reference design, ensuring that newly logged readings immediately updated the Care screen history, updated the weekly and monthly chart views, and dynamically recalculated parameter status badges using a warning color for both above- and below-range values. 
 - **What it gave back:** Parameter logging interface with form controls for selecting parameters, entering values, and picking measurement dates and times, while correctly inheriting the active aquarium context. It successfully wired the backend logic so logged readings updated the parameter list, populated the Care history tab, and rendered visual data points on the Week and Month charts with calculated averages and out-of-range status warnings.
-- **What I kept, what I changed, and why:** 
-- **Commit:** 
+- **What I kept, what I changed, and why:** I kept the primary logging flow, date/time picking, and cross-screen state updates because the data propagation to the charts and Care history functioned smoothly. However, I made several UI and logic refinements to clean up the user experience. I removed redundant action buttons (such as the extraneous "Done" button when "Log Parameter" already submitted the form) to reduce visual clutter, added missing parameter units next to raw numbers on the main Parameters page for visual clarity, and filtered the parameter dropdown in the Log Parameters screen so it strictly displays parameters currently toggled ON in the settings.
+- **Commit:** https://github.com/vvnrzn/Vivari/commit/a03ed00093cf9847636f291af0b628d77c61f480
 
 ### -- 
 - **Tool:** 
