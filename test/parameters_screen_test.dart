@@ -22,7 +22,16 @@ void main() {
   testWidgets('settings toggle adds an optional parameter to the list', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: ParametersScreen()));
+    final aquarium = Aquarium(
+      name: 'Pacific Reef',
+      type: AquariumType.saltwater,
+      volume: 40,
+      volumeUnit: 'gal',
+      createdAt: DateTime(2026),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: ParametersScreen(aquariums: [aquarium])),
+    );
     await tester.tap(find.byTooltip('Parameter Settings'));
     await tester.pumpAndSettle();
 
@@ -41,6 +50,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('GH'), findsOneWidget);
     expect(find.text('No readings'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Log Parameters'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LogParameterScreen), findsOneWidget);
+    expect(find.text('GH'), findsWidgets);
+    expect(find.text('More'), findsNothing);
+    expect(find.text('Done'), findsNothing);
   });
 
   testWidgets('aquarium selection reveals its recommended parameter ranges', (
@@ -103,6 +119,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(LogParameterScreen), findsOneWidget);
     expect(find.text('Tank B'), findsWidgets);
+    expect(find.text('GH'), findsNothing);
+    expect(find.text('More'), findsNothing);
+    expect(find.text('Done'), findsNothing);
 
     await tester.tap(find.text('pH'));
     final valueField = find.byKey(const ValueKey('parameter-reading-value'));
@@ -137,6 +156,32 @@ void main() {
     expect(find.text('Above range'), findsOneWidget);
     expect(find.text('No readings yet'), findsNothing);
     expect(find.text('AVERAGE'), findsOneWidget);
+  });
+
+  testWidgets('main parameter values include their units', (tester) async {
+    final aquarium = Aquarium(
+      name: 'Freshwater Tank',
+      type: AquariumType.freshwater,
+      volume: 40,
+      volumeUnit: 'gal',
+      createdAt: DateTime(2026),
+    );
+    final reading = WaterReading(
+      aquariumName: aquarium.name,
+      parameterId: 'ammonia',
+      parameterName: 'Ammonia',
+      value: 0.5,
+      unit: 'ppm',
+      measuredAt: DateTime.now(),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParametersScreen(aquariums: [aquarium], readings: [reading]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('0.5 ppm'), findsOneWidget);
   });
 
   testWidgets('long aquarium names are ellipsized in parameter filters', (

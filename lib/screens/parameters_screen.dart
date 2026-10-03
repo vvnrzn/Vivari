@@ -449,7 +449,6 @@ class _LogParameterScreenState extends State<LogParameterScreen> {
   late DateTime _date;
   late TimeOfDay _time;
   late WaterParameter? _selectedParameter;
-  bool _showAllParameters = false;
 
   @override
   void initState() {
@@ -468,10 +467,8 @@ class _LogParameterScreenState extends State<LogParameterScreen> {
     super.dispose();
   }
 
-  List<WaterParameter> get _visibleParameters {
-    if (_showAllParameters) return widget.parameters;
-    return widget.parameters.where((parameter) => parameter.enabled).toList();
-  }
+  List<WaterParameter> get _visibleParameters =>
+      widget.parameters.where((parameter) => parameter.enabled).toList();
 
   Future<void> _selectDate() async {
     final date = await showDatePicker(
@@ -530,9 +527,6 @@ class _LogParameterScreenState extends State<LogParameterScreen> {
         parsedValue.isFinite &&
         parsedValue >= 0;
     final parameters = _visibleParameters;
-    final hasMore =
-        !_showAllParameters &&
-        widget.parameters.any((parameter) => !parameter.enabled);
 
     return Scaffold(
       backgroundColor: VivariColors.background,
@@ -543,13 +537,6 @@ class _LogParameterScreenState extends State<LogParameterScreen> {
           icon: const Icon(Icons.close),
         ),
         title: const Text('Add Measurements'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Done'),
-          ),
-          const SizedBox(width: AppSpacing.small),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -577,7 +564,7 @@ class _LogParameterScreenState extends State<LogParameterScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: parameters.length + (hasMore ? 1 : 0),
+            itemCount: parameters.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 5,
               crossAxisSpacing: 8,
@@ -585,33 +572,6 @@ class _LogParameterScreenState extends State<LogParameterScreen> {
               childAspectRatio: 0.82,
             ),
             itemBuilder: (context, index) {
-              if (hasMore && index == parameters.length) {
-                final hiddenCount =
-                    widget.parameters.length - parameters.length;
-                return OutlinedButton(
-                  onPressed: () => setState(() => _showAllParameters = true),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: VivariColors.primary,
-                    side: const BorderSide(color: VivariColors.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('More'),
-                      Text(
-                        '+$hiddenCount',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: VivariColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
               final parameter = parameters[index];
               final selected = parameter.id == selectedParameter?.id;
               return InkWell(
@@ -906,7 +866,9 @@ class _ParameterListCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    reading == null ? '—' : _formatNumber(reading!.value),
+                    reading == null
+                        ? '—'
+                        : '${_formatNumber(reading!.value)}${parameter.unit.isEmpty ? '' : ' ${parameter.unit}'}',
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       color: _statusColor(status),
                       fontSize: 21,
