@@ -23,10 +23,10 @@
 - **What I kept, what I changed, and why:** I made several UI adjustments to fix layouts and improve consistency. To resolve the RenderFlex overflows, I removed the "-" prefix from the "no readings" badge to save space (especially critical on the chart screens). I also implemented text truncation (adding "...") for lengthy aquarium names across the Parameters, Care, and Home dashboard screens to prevent the text from cramping the UI or wrapping awkwardly. Finally, to ensure visual consistency with the app's theme, I added SafeArea boundaries to fix the notch overlap, made the customize parameter settings button thinner, and updated the active toggle button colors to match the app's specific palette instead of using the default bright green.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/4cdd5bbc6574139cd5f19dc6ce39e199845e0427
 
-### -- 
-- **Tool:** 
-- **What I asked for:**
-- **What it gave back:** 
+### Parameter Logging & Care Sy
+- **Tool:** Copilot
+- **What I asked for:** I requested the implementation of the Log Parameter screen based on the provided reference design, ensuring that newly logged readings immediately updated the Care screen history, updated the weekly and monthly chart views, and dynamically recalculated parameter status badges using a warning color for both above- and below-range values. 
+- **What it gave back:** Parameter logging interface with form controls for selecting parameters, entering values, and picking measurement dates and times, while correctly inheriting the active aquarium context. It successfully wired the backend logic so logged readings updated the parameter list, populated the Care history tab, and rendered visual data points on the Week and Month charts with calculated averages and out-of-range status warnings.
 - **What I kept, what I changed, and why:** 
 - **Commit:** 
 
@@ -57,7 +57,7 @@
 
 - **What it gave me:**  It built a custom parameter chart with Week and Month views. It filters the saved measurements to the selected aquarium and time period, plots values over time, and displays measurement-range values on the vertical axis. It also updates the latest reading, average, and status badge based on the logged data.
 - **What was wrong with it:** The chart positioned readings according to their measurement dates, but did not display date labels on the horizontal (x) axis. This made it difficult to tell when readings were taken or interpret the trend over the selected week or month.
-- **What I did instead:** I connected the chart to the saved parameter readings and added status and average calculations, and the graph with x-axis date labels. It now shows suitable dates along the bottom of the chart—for example, days of the week in Week view and dates or weekly intervals in Month view.
+- **What I did instead:** 
 - **Commit:**
 
 ### Case 3 -
