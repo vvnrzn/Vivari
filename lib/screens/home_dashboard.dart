@@ -55,22 +55,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   CareActivity? _latestActivity(String name) {
-    final matches = widget.activities.where((activity) => activity.name == name);
+    final matches = widget.activities.where(
+      (activity) => activity.name == name,
+    );
     if (matches.isEmpty) return null;
     return matches.reduce(
       (latest, activity) =>
           activity.loggedAt.isAfter(latest.loggedAt) ? activity : latest,
     );
-  }
-
-  String _activityStatus(BuildContext context, CareActivity? activity) {
-    if (activity == null) return 'No records yet';
-    final date = MaterialLocalizations.of(
-      context,
-    ).formatShortDate(activity.loggedAt);
-    return activity.aquariumName.isEmpty
-        ? date
-        : '$date · ${activity.aquariumName}';
   }
 
   @override
@@ -185,7 +177,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       padding: const EdgeInsets.all(AppSpacing.medium),
                       child: _SummaryValue(
                         label: 'Last Water Change',
-                        value: _activityStatus(context, lastWaterChange),
+                        activity: lastWaterChange,
                       ),
                     ),
                   ),
@@ -195,7 +187,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       padding: const EdgeInsets.all(AppSpacing.medium),
                       child: _SummaryValue(
                         label: 'Last Dosing',
-                        value: _activityStatus(context, lastDosing),
+                        activity: lastDosing,
                       ),
                     ),
                   ),
@@ -242,14 +234,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
       ),
     );
   }
+}
 
+String _activityDate(CareActivity? activity) {
+  if (activity == null) return 'No records yet';
+  final daysAgo = DateUtils.dateOnly(
+    DateTime.now(),
+  ).difference(DateUtils.dateOnly(activity.loggedAt)).inDays;
+  if (daysAgo == 0) return 'Today';
+  if (daysAgo == 1) return 'Yesterday';
+  if (daysAgo > 0) return '$daysAgo days ago';
+  if (daysAgo == -1) return 'Tomorrow';
+  return 'In ${-daysAgo} days';
 }
 
 class _VivariBubbleMarkPainter extends CustomPainter {
-  const _VivariBubbleMarkPainter({
-    required this.color,
-    this.outlined = false,
-  });
+  const _VivariBubbleMarkPainter({required this.color, this.outlined = false});
 
   final Color color;
   final bool outlined;
@@ -333,15 +333,6 @@ class _AquariumCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (aquarium.pendingTasks > 0)
-                      Positioned(
-                        top: AppSpacing.small,
-                        right: AppSpacing.small,
-                        child: _Badge(
-                          label: '${aquarium.pendingTasks} pending',
-                          color: VivariColors.warning,
-                        ),
-                      ),
                     Positioned(
                       left: AppSpacing.medium,
                       right: AppSpacing.medium,
@@ -383,6 +374,13 @@ class _AquariumCard extends StatelessWidget {
                         '${_formatVolume(aquarium.volume)} ${aquarium.volumeUnit}',
                   ),
                   const Spacer(),
+                  if (aquarium.pendingTasks > 0) ...[
+                    _Badge(
+                      label: '${aquarium.pendingTasks}',
+                      color: VivariColors.warning,
+                    ),
+                    const SizedBox(width: AppSpacing.small),
+                  ],
                   _Badge(
                     label: aquarium.type.label,
                     color: VivariColors.primary,
@@ -461,13 +459,27 @@ String _ageSince(DateTime date) {
 }
 
 class _SummaryValue extends StatelessWidget {
-  const _SummaryValue({required this.label, required this.value});
+  const _SummaryValue({required this.label, required this.activity});
 
   final String label;
-  final String value;
+  final CareActivity? activity;
 
   @override
   Widget build(BuildContext context) {
+    final amountValue = activity?.amount?.trim() ?? '';
+    final unit = activity?.unit?.trim() ?? '';
+    final amount = amountValue.isEmpty
+        ? unit
+        : unit.isEmpty
+        ? amountValue
+        : '$amountValue${unit == '%' ? '' : ' '}$unit';
+    final aquariumName = activity?.aquariumName.trim() ?? '';
+    final hasName = aquariumName.isNotEmpty;
+    final hasAmount = amount.isNotEmpty;
+    final dateStyle = activity == null
+        ? Theme.of(context).textTheme.titleMedium
+        : Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 20);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -480,16 +492,75 @@ class _SummaryValue extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          value,
-          style: _isDataValue(value)
-              ? Theme.of(context).textTheme.displaySmall
-              : Theme.of(context).textTheme.titleMedium,
+          _activityDate(activity),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: dateStyle,
         ),
+        if (hasName || hasAmount) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              if (hasName && hasAmount) ...[
+                Expanded(
+                  child: Text(
+                    aquariumName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: VivariColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '·',
+                  style: GoogleFonts.dmSans(
+                    color: VivariColors.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    amount,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: VivariColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ] else if (hasName)
+                Expanded(
+                  child: Text(
+                    aquariumName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: VivariColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: Text(
+                    amount,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: VivariColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ],
     );
-  }
-
-  bool _isDataValue(String text) {
-    return text != 'No tasks for today' && text != 'No records yet';
   }
 }
