@@ -476,13 +476,16 @@ class _SummaryValue extends StatelessWidget {
     final aquariumName = activity?.aquariumName.trim() ?? '';
     final hasName = aquariumName.isNotEmpty;
     final hasAmount = amount.isNotEmpty;
-    final dateStyle = activity == null
-        ? Theme.of(context).textTheme.titleMedium
-        : Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 20);
+    final caption = switch ((hasName, hasAmount)) {
+      (true, true) => '$aquariumName · $amount',
+      (true, false) => aquariumName,
+      (false, true) => amount,
+      (false, false) => '',
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
@@ -495,71 +498,22 @@ class _SummaryValue extends StatelessWidget {
           _activityDate(activity),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: dateStyle,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
-        if (hasName || hasAmount) ...[
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              if (hasName && hasAmount) ...[
-                Expanded(
-                  child: Text(
-                    aquariumName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      color: VivariColors.textMuted,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '·',
-                  style: GoogleFonts.dmSans(
-                    color: VivariColors.textMuted,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    amount,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      color: VivariColors.textMuted,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ] else if (hasName)
-                Expanded(
-                  child: Text(
-                    aquariumName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      color: VivariColors.textMuted,
-                      fontSize: 11,
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: Text(
-                    amount,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      color: VivariColors.textMuted,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-            ],
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 16,
+          child: Text(
+            caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.start,
+            style: GoogleFonts.dmSans(
+              color: VivariColors.textMuted,
+              fontSize: 11,
+            ),
           ),
-        ],
+        ),
       ],
     );
   }

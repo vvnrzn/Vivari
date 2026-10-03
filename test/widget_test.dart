@@ -257,7 +257,7 @@ void main() {
     expect(task.isDueOn(DateTime(2026, 9, 29)), isFalse);
   });
 
-  testWidgets('creating a task updates Home dashboard due today', (
+  testWidgets('creating a task is disabled until an aquarium is selected', (
     tester,
   ) async {
     await tester.pumpWidget(const MyApp());
@@ -273,25 +273,15 @@ void main() {
     await tester.ensureVisible(find.text('Feed Fish'));
     await tester.tap(find.text('Feed Fish'));
     await tester.pump();
-    await tester.tap(find.text('Create Task'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Home'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('1'), findsOneWidget);
-    expect(find.text('Feed Fish'), findsNothing);
-
-    await tester.tap(find.text('Care'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Mark task complete'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('History'));
-    await tester.pumpAndSettle();
-    expect(find.text('Feed Fish'), findsOneWidget);
+    final createTaskButton = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Create Task'),
+    );
+    expect(createTaskButton.onPressed, isNull);
   });
 
-  testWidgets('logging a preset activity updates Care history', (tester) async {
+  testWidgets('logging activity is disabled until an aquarium is selected', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
@@ -315,11 +305,9 @@ void main() {
     );
     await tester.tap(find.text('Cleaned filter'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save activity'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('History'));
-    await tester.pumpAndSettle();
-    expect(find.text('Changed water'), findsOneWidget);
-    expect(find.text('Cleaned filter'), findsOneWidget);
+    final saveActivityButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Save activity'),
+    );
+    expect(saveActivityButton.onPressed, isNull);
   });
 }

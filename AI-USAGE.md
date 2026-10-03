@@ -20,8 +20,8 @@
 - **Tool:** Codex
 - **What I asked for:** I requested the creation of a three-view Parameters section, including a base dashboard, a detailed chart screen limited to week and month views, and a draggable settings modal. I specifically asked to implement a horizontal tank scroller without an "All Tanks" option, reusable status badges indicating if values are within or outside target ranges, and the ability to toggle a comprehensive list of additional water parameters. Finally, I directed the assistant to include a range customization pop-up accessible from the settings list to easily define the minimum and maximum optimal values for any parameter.
 - **What it gave back:** provided the correct navigational flow and functional logic, but it failed to maintain consistent UI styling, particularly regarding the border radius of the pill buttons. The generated code also resulted in a RenderFlex overflow error, indicating layout constraints were not handled properly. Additionally, the Parameter Details screen lacked proper top padding or safe area implementation.
-- **What I kept, what I changed, and why:** 
-- **Commit:** 
+- **What I kept, what I changed, and why:** I made several UI adjustments to fix layouts and improve consistency. To resolve the RenderFlex overflows, I removed the "-" prefix from the "no readings" badge to save space (especially critical on the chart screens). I also implemented text truncation (adding "...") for lengthy aquarium names across the Parameters, Care, and Home dashboard screens to prevent the text from cramping the UI or wrapping awkwardly. Finally, to ensure visual consistency with the app's theme, I added SafeArea boundaries to fix the notch overlap, made the customize parameter settings button thinner, and updated the active toggle button colors to match the app's specific palette instead of using the default bright green.
+- **Commit:** https://github.com/vvnrzn/Vivari/commit/4cdd5bbc6574139cd5f19dc6ce39e199845e0427
 
 ### -- 
 - **Tool:** 

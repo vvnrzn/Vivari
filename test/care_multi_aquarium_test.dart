@@ -48,6 +48,11 @@ void main() {
     await tester.tap(find.text('Open task form'));
     await tester.pumpAndSettle();
 
+    final createTaskButton = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Create Task'),
+    );
+    expect(createTaskButton.onPressed, isNull);
+
     await tester.scrollUntilVisible(
       find.text('Select aquarium(s)'),
       200,
@@ -59,6 +64,15 @@ void main() {
     await tester.tap(find.byType(CheckboxListTile).at(1));
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextButton>(
+            find.widgetWithText(TextButton, 'Create Task'),
+          )
+          .onPressed,
+      isNotNull,
+    );
 
     await tester.enterText(find.byType(TextField).first, 'Clean both tanks');
     await tester.tap(find.text('Create Task'));
@@ -94,6 +108,15 @@ void main() {
     await tester.tap(find.text('Open activity form'));
     await tester.pumpAndSettle();
 
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Save activity'),
+          )
+          .onPressed,
+      isNull,
+    );
+
     await tester.ensureVisible(find.text('Select aquarium(s)'));
     await tester.tap(find.text('Select aquarium(s)'));
     await tester.pumpAndSettle();
@@ -101,6 +124,15 @@ void main() {
     await tester.tap(find.byType(CheckboxListTile).at(1));
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Save activity'),
+          )
+          .onPressed,
+      isNotNull,
+    );
 
     await tester.ensureVisible(find.text('Fed fish'));
     await tester.tap(find.text('Fed fish'));

@@ -9,7 +9,7 @@ void main() {
     tester,
   ) async {
     final now = DateTime.now();
-    final aquariumName = 'An Extremely Long Aquarium Name That Cannot Fit';
+    const aquariumName = 'An Extremely Long Aquarium Name That Cannot Fit';
     await tester.pumpWidget(
       MaterialApp(
         home: HomeDashboard(
@@ -42,12 +42,22 @@ void main() {
 
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('2 days ago'), findsOneWidget);
-    expect(find.text('25%'), findsOneWidget);
-    expect(find.text('2 ml'), findsOneWidget);
+    expect(find.text('$aquariumName · 25%'), findsOneWidget);
+    expect(find.text('Pacific Reef · 2 ml'), findsOneWidget);
 
-    final nameLabel = tester.widget<Text>(find.text(aquariumName));
-    expect(nameLabel.maxLines, 1);
-    expect(nameLabel.overflow, TextOverflow.ellipsis);
+    final waterChangeDate = tester.getTopLeft(find.text('Today')).dy;
+    final dosingDate = tester.getTopLeft(find.text('2 days ago')).dy;
+    expect(waterChangeDate, dosingDate);
+    expect(
+      tester.widget<Text>(find.text('Today')).style,
+      tester.widget<Text>(find.text('No tasks for today')).style,
+    );
+
+    final caption = tester.widget<Text>(find.text('$aquariumName · 25%'));
+    expect(caption.maxLines, 1);
+    expect(caption.overflow, TextOverflow.ellipsis);
+    expect(caption.textAlign, TextAlign.start);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('aquarium card shows a count-only pending badge when needed', (

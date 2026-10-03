@@ -356,7 +356,11 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: FilledButton(
-          onPressed: _save,
+          onPressed: _aquariums.isEmpty ? null : _save,
+          style: FilledButton.styleFrom(
+            disabledBackgroundColor: VivariColors.secondary,
+            disabledForegroundColor: VivariColors.textMuted,
+          ),
           child: const Text('Save activity'),
         ),
       ),

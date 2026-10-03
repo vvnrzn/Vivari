@@ -169,7 +169,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         ),
         title: const Text('Task Details'),
         actions: [
-          TextButton(onPressed: _createTask, child: const Text('Create Task')),
+          TextButton(
+            onPressed: _aquariums.isEmpty ? null : _createTask,
+            style: TextButton.styleFrom(
+              disabledForegroundColor: VivariColors.textMuted,
+            ),
+            child: const Text('Create Task'),
+          ),
           const SizedBox(width: 12),
         ],
       ),
