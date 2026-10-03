@@ -57,8 +57,8 @@
 
 - **What it gave me:**  It built a custom parameter chart with Week and Month views. It filters the saved measurements to the selected aquarium and time period, plots values over time, and displays measurement-range values on the vertical axis. It also updates the latest reading, average, and status badge based on the logged data.
 - **What was wrong with it:** The chart positioned readings according to their measurement dates, but did not display date labels on the horizontal (x) axis. This made it difficult to tell when readings were taken or interpret the trend over the selected week or month.
-- **What I did instead:** 
-- **Commit:**
+- **What I did instead:** I connected the chart to the saved parameter readings and added status and average calculations, and the graph with x-axis date labels. It now shows suitable dates along the bottom of the chart—for example, days of the week in Week view and dates or weekly intervals in Month view.
+- **Commit:** https://github.com/vvnrzn/Vivari/commit/b5157c580c1b2ae54e6c2e61a6ef99051d751761
 
 ### Case 3 -
 
