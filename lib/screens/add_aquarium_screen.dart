@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,7 +6,9 @@ import '../models/aquarium.dart';
 import '../theme/app_theme.dart';
 
 class AddAquariumScreen extends StatefulWidget {
-  const AddAquariumScreen({super.key});
+  const AddAquariumScreen({this.initialAquarium, super.key});
+
+  final Aquarium? initialAquarium;
 
   @override
   State<AddAquariumScreen> createState() => _AddAquariumScreenState();
@@ -22,6 +22,23 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
   DateTime _createdAt = DateTime.now();
   XFile? _photo;
   Future<Uint8List>? _photoBytes;
+  Uint8List? _existingPhotoBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    final aquarium = widget.initialAquarium;
+    if (aquarium != null) {
+      _nameController.text = aquarium.name;
+      _volumeController.text = _formatVolume(aquarium.volume);
+      _type = aquarium.type;
+      _volumeUnit = aquarium.volumeUnit;
+      _createdAt = aquarium.createdAt;
+      _existingPhotoBytes = aquarium.photoBytes;
+    }
+  }
+
+  bool get _isEditing => widget.initialAquarium != null;
 
   bool get _canCreate {
     final name = _nameController.text.trim();
@@ -38,7 +55,9 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
 
   Future<void> _createAquarium() async {
     final volume = double.parse(_volumeController.text.trim());
-    final photoBytes = await _photo?.readAsBytes();
+    final photoBytes = _photo == null
+        ? _existingPhotoBytes
+        : await _photo!.readAsBytes();
     if (!mounted) return;
     Navigator.of(context).pop(
       Aquarium(
@@ -48,8 +67,36 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
         volumeUnit: _volumeUnit,
         createdAt: _createdAt,
         photoBytes: photoBytes,
+        pendingTasks: widget.initialAquarium?.pendingTasks ?? 0,
       ),
     );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete aquarium?'),
+        content: Text(
+          'Are you sure you want to delete "${widget.initialAquarium!.name}"? '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: VivariColors.error),
+            child: const Text('Delete Aquarium'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<void> _selectPhoto() async {
@@ -59,6 +106,7 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
         setState(() {
           _photo = photo;
           _photoBytes = photo.readAsBytes();
+          _existingPhotoBytes = null;
         });
       }
     } on PlatformException catch (error) {
@@ -95,7 +143,7 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Aquarium'),
+        title: Text(_isEditing ? 'Edit Aquarium' : 'Add Aquarium'),
         actions: [
           TextButton(
             onPressed: _canCreate ? _createAquarium : null,
@@ -104,7 +152,7 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
                   ? VivariColors.primary
                   : VivariColors.textMuted,
             ),
-            child: const Text('Create'),
+            child: Text(_isEditing ? 'Save' : 'Create'),
           ),
           const SizedBox(width: AppSpacing.small),
         ],
@@ -188,6 +236,7 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
             _PhotoPicker(
               photo: _photo,
               photoBytes: _photoBytes,
+              existingPhotoBytes: _existingPhotoBytes,
               onPressed: _selectPhoto,
             ),
             const SizedBox(height: AppSpacing.large),
@@ -210,6 +259,24 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
                 ),
               ),
             ),
+            if (_isEditing) ...[
+              const SizedBox(height: AppSpacing.large),
+              const Divider(),
+              const SizedBox(height: AppSpacing.medium),
+              OutlinedButton.icon(
+                onPressed: _confirmDelete,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete Aquarium'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: VivariColors.error,
+                  minimumSize: const Size(0, 52),
+                  side: const BorderSide(color: VivariColors.error),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -316,11 +383,13 @@ class _PhotoPicker extends StatelessWidget {
   const _PhotoPicker({
     required this.photo,
     required this.photoBytes,
+    required this.existingPhotoBytes,
     required this.onPressed,
   });
 
   final XFile? photo;
   final Future<Uint8List>? photoBytes;
+  final Uint8List? existingPhotoBytes;
   final VoidCallback onPressed;
 
   @override
@@ -336,13 +405,27 @@ class _PhotoPicker extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         clipBehavior: Clip.antiAlias,
-        child: photo == null
+        child: photo == null && existingPhotoBytes == null
             ? const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_photo_alternate_outlined, size: 28),
                   SizedBox(height: AppSpacing.small),
                   Text('Add photo'),
+                ],
+              )
+            : photo == null
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.memory(existingPhotoBytes!, fit: BoxFit.cover),
+                  const Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.small),
+                      child: Icon(Icons.edit, color: Colors.white),
+                    ),
+                  ),
                 ],
               )
             : FutureBuilder<Uint8List>(
@@ -379,3 +462,7 @@ class _PhotoPicker extends StatelessWidget {
 String _formatDate(DateTime date) =>
     '${date.day.toString().padLeft(2, '0')}/'
     '${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+String _formatVolume(double volume) => volume == volume.roundToDouble()
+    ? volume.toInt().toString()
+    : volume.toString();

@@ -17,6 +17,8 @@ class HomeDashboard extends StatefulWidget {
     required this.tasks,
     required this.activities,
     required this.onAquariumAdded,
+    this.onAquariumUpdated,
+    this.onAquariumDeleted,
     super.key,
   });
 
@@ -25,6 +27,8 @@ class HomeDashboard extends StatefulWidget {
   final List<CareTask> tasks;
   final List<CareActivity> activities;
   final ValueChanged<Aquarium> onAquariumAdded;
+  final void Function(Aquarium previous, Aquarium updated)? onAquariumUpdated;
+  final ValueChanged<Aquarium>? onAquariumDeleted;
 
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
@@ -45,7 +49,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => AquariumDetailsScreen(aquarium: aquarium),
+        builder: (_) => AquariumDetailsScreen(
+          aquarium: aquarium,
+          onAquariumUpdated: (previous, updated) =>
+              widget.onAquariumUpdated?.call(previous, updated),
+          onAquariumDeleted: () => widget.onAquariumDeleted?.call(aquarium),
+        ),
       ),
     );
   }
@@ -313,7 +322,7 @@ class _AquariumCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: CustomPaint(
                             size: Size(56, 56),
                             painter: _VivariBubbleMarkPainter(
