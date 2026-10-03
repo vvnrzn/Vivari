@@ -12,6 +12,7 @@ import 'package:final_project/main.dart';
 import 'package:final_project/models/aquarium.dart';
 import 'package:final_project/models/care_record.dart';
 import 'package:final_project/screens/care_screen.dart';
+import 'package:final_project/screens/home_dashboard.dart';
 
 void main() {
   testWidgets('home dashboard starts with empty states', (tester) async {
@@ -26,6 +27,33 @@ void main() {
 
     expect(find.text('No aquariums yet'), findsOneWidget);
     expect(find.text('No tasks for today'), findsOneWidget);
+  });
+
+  testWidgets('home aquarium names are ellipsized on one line', (tester) async {
+    const name = 'An Extremely Long Aquarium Name That Cannot Fit';
+    final aquarium = Aquarium(
+      name: name,
+      type: AquariumType.freshwater,
+      volume: 40,
+      volumeUnit: 'L',
+      createdAt: DateTime(2026),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeDashboard(
+          onSelectTab: (_) {},
+          aquariums: [aquarium],
+          tasks: const [],
+          activities: const [],
+          onAquariumAdded: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<Text>(find.text(name));
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
   });
 
   testWidgets('care switches between four empty view modes', (tester) async {

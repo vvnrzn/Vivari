@@ -91,25 +91,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
             SizedBox(
               width: 28,
               height: 32,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    left: 3,
-                    top: 10,
-                    child: _VivariBubble(size: 10),
-                  ),
-                  Positioned(
-                    left: 14,
-                    top: 2,
-                    child: _VivariBubble(size: 7),
-                  ),
-                  Positioned(
-                    left: 16,
-                    top: 17,
-                    child: _VivariBubble(size: 6),
-                  ),
-                ],
+              child: CustomPaint(
+                size: const Size(28, 32),
+                painter: const _VivariBubbleMarkPainter(
+                  color: VivariColors.primary,
+                ),
               ),
             ),
           ],
@@ -259,22 +245,34 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
 }
 
-class _VivariBubble extends StatelessWidget {
-  const _VivariBubble({required this.size});
+class _VivariBubbleMarkPainter extends CustomPainter {
+  const _VivariBubbleMarkPainter({
+    required this.color,
+    this.outlined = false,
+  });
 
-  final double size;
+  final Color color;
+  final bool outlined;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: VivariColors.primary,
-        shape: BoxShape.circle,
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final scale = size.width / 28;
+    canvas.save();
+    canvas.scale(scale);
+    final paint = Paint()
+      ..color = color
+      ..style = outlined ? PaintingStyle.stroke : PaintingStyle.fill
+      ..strokeWidth = 1.4 / scale;
+    canvas
+      ..drawCircle(const Offset(8, 15), 5, paint)
+      ..drawCircle(const Offset(17.5, 5.5), 3.5, paint)
+      ..drawCircle(const Offset(19, 20), 3, paint);
+    canvas.restore();
   }
+
+  @override
+  bool shouldRepaint(covariant _VivariBubbleMarkPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.outlined != outlined;
 }
 
 class _AquariumCard extends StatelessWidget {
@@ -317,8 +315,11 @@ class _AquariumCard extends StatelessWidget {
                         ),
                         child: const Center(
                           child: CustomPaint(
-                            size: Size(56, 42),
-                            painter: _AquariumPlaceholderPainter(),
+                            size: Size(56, 56),
+                            painter: _VivariBubbleMarkPainter(
+                              color: Colors.white,
+                              outlined: true,
+                            ),
                           ),
                         ),
                       ),
@@ -394,60 +395,6 @@ class _AquariumCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AquariumPlaceholderPainter extends CustomPainter {
-  const _AquariumPlaceholderPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final scaleX = size.width / 240;
-    final scaleY = size.height / 180;
-    canvas.scale(scaleX, scaleY);
-    final paint = Paint()
-      ..color = VivariColors.textMuted
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final bowl = Path()
-      ..moveTo(60, 10)
-      ..lineTo(180, 10)
-      ..cubicTo(202, 32, 220, 61, 220, 96)
-      ..cubicTo(220, 135, 197, 163, 165, 179)
-      ..lineTo(75, 179)
-      ..cubicTo(43, 163, 20, 135, 20, 96)
-      ..cubicTo(20, 61, 38, 32, 60, 10)
-      ..moveTo(30, 43)
-      ..cubicTo(66, 62, 95, 70, 120, 62)
-      ..cubicTo(153, 50, 180, 38, 210, 48)
-      ..moveTo(56, 151)
-      ..lineTo(184, 151);
-    canvas.drawPath(bowl, paint);
-
-    final fish = Path()
-      ..moveTo(70, 103)
-      ..cubicTo(85, 88, 98, 86, 112, 99)
-      ..cubicTo(128, 87, 143, 84, 160, 89)
-      ..cubicTo(177, 94, 188, 103, 194, 112)
-      ..cubicTo(188, 124, 177, 134, 160, 138)
-      ..cubicTo(143, 143, 128, 138, 112, 126)
-      ..cubicTo(98, 139, 85, 136, 70, 122)
-      ..cubicTo(79, 117, 79, 108, 70, 103)
-      ..moveTo(161, 112)
-      ..lineTo(161, 112);
-    canvas.drawPath(fish, paint);
-    canvas.drawCircle(
-      const Offset(163, 111),
-      2,
-      Paint()..color = VivariColors.textMuted,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _AquariumPlaceholderPainter oldDelegate) =>
-      false;
 }
 
 class _AquariumMetadata extends StatelessWidget {

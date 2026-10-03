@@ -418,7 +418,14 @@ class _AquariumPills extends StatelessWidget {
         final aquarium = aquariums[index];
         final selected = aquarium.name == selectedName;
         return ChoiceChip(
-          label: Text(aquarium.name),
+          label: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              aquarium.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           selected: selected,
           onSelected: (_) => onSelected(aquarium),
           backgroundColor: VivariColors.secondary,
@@ -429,6 +436,9 @@ class _AquariumPills extends StatelessWidget {
           ),
           side: BorderSide(
             color: selected ? VivariColors.primary : VivariColors.border,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
           showCheckmark: false,
           padding: const EdgeInsets.symmetric(horizontal: 4),

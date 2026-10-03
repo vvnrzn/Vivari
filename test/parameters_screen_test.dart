@@ -63,6 +63,27 @@ void main() {
     expect(find.text('All Tanks'), findsNothing);
   });
 
+  testWidgets('long aquarium names are ellipsized in parameter filters', (
+    tester,
+  ) async {
+    const name = 'An Extremely Long Aquarium Name That Cannot Fit';
+    final aquarium = Aquarium(
+      name: name,
+      type: AquariumType.freshwater,
+      volume: 40,
+      volumeUnit: 'gal',
+      createdAt: DateTime(2026),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: ParametersScreen(aquariums: [aquarium])),
+    );
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<Text>(find.text(name));
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
+  });
+
   testWidgets('parameter detail opens an empty chart with Week and Month', (
     tester,
   ) async {

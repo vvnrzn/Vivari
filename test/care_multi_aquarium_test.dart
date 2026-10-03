@@ -142,4 +142,25 @@ void main() {
     expect(find.text('Recent log'), findsOneWidget);
     expect(find.text('Old log'), findsNothing);
   });
+
+  testWidgets('long aquarium names are ellipsized in care filters', (
+    tester,
+  ) async {
+    const name = 'An Extremely Long Aquarium Name That Cannot Fit';
+    final aquarium = Aquarium(
+      name: name,
+      type: AquariumType.freshwater,
+      volume: 40,
+      volumeUnit: 'L',
+      createdAt: DateTime(2026),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: CareScreen(aquariums: [aquarium])),
+    );
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<Text>(find.text(name));
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
+  });
 }
