@@ -1002,10 +1002,10 @@ class _ParameterDetailsScreenState extends State<ParameterDetailsScreen> {
         ? ParameterStatus.noReading
         : _statusForReading(latestReading, range);
     final now = DateTime.now();
-    final timeframeDuration = Duration(
-      days: _timeframe == _ChartTimeframe.week ? 7 : 30,
-    );
-    final timeframeStart = now.subtract(timeframeDuration);
+    final today = DateUtils.dateOnly(now);
+    final timeframeDays = _timeframe == _ChartTimeframe.week ? 7 : 30;
+    final timeframeStart = today.subtract(Duration(days: timeframeDays - 1));
+    final timeframeEnd = today.add(const Duration(days: 1));
     final timeframeReadings = readings
         .where(
           (reading) =>
@@ -1095,6 +1095,8 @@ class _ParameterDetailsScreenState extends State<ParameterDetailsScreen> {
               unit: parameter.unit,
               timeframe: _timeframe,
               readings: timeframeReadings,
+              windowStart: timeframeStart,
+              windowEnd: timeframeEnd,
             ),
             const SizedBox(height: AppSpacing.medium),
             Row(
@@ -1173,74 +1175,118 @@ class _ParameterChart extends StatelessWidget {
     required this.unit,
     required this.timeframe,
     required this.readings,
+    required this.windowStart,
+    required this.windowEnd,
   });
 
   final ParameterRange? range;
   final String unit;
   final _ChartTimeframe timeframe;
   final List<WaterReading> readings;
+  final DateTime windowStart;
+  final DateTime windowEnd;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 250,
-    decoration: BoxDecoration(
-      color: VivariColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: VivariColors.border),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _ParameterGridPainter(
-              minimum: range?.minimum ?? 0,
-              maximum: range?.maximum ?? 10,
-              unit: unit,
-            ),
-            foregroundPainter: readings.isEmpty
-                ? null
-                : _ParameterReadingsPainter(
-                    minimum: range?.minimum ?? 0,
-                    maximum: range?.maximum ?? 10,
-                    readings: readings,
-                    windowStart: DateTime.now().subtract(
-                      Duration(
-                        days: timeframe == _ChartTimeframe.week ? 7 : 30,
-                      ),
+  Widget build(BuildContext context) {
+    final dateLabels = _dateLabels(context);
+    return Container(
+      height: 250,
+      decoration: BoxDecoration(
+        color: VivariColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: VivariColors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _ParameterGridPainter(
+                minimum: range?.minimum ?? 0,
+                maximum: range?.maximum ?? 10,
+                unit: unit,
+              ),
+              foregroundPainter: readings.isEmpty
+                  ? null
+                  : _ParameterReadingsPainter(
+                      minimum: range?.minimum ?? 0,
+                      maximum: range?.maximum ?? 10,
+                      readings: readings,
+                      windowStart: windowStart,
+                      windowEnd: windowEnd,
                     ),
-                    windowEnd: DateTime.now(),
+            ),
+          ),
+          if (readings.isEmpty)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.show_chart_rounded,
+                  color: VivariColors.textMuted.withValues(alpha: 0.65),
+                  size: 26,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'No readings yet',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Text(
+                  timeframe == _ChartTimeframe.week
+                      ? 'Your last 7 days will appear here'
+                      : 'Your last 30 days will appear here',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                ),
+              ],
+            ),
+          Positioned(
+            left: 48,
+            right: 12,
+            bottom: 2,
+            height: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var index = 0; index < dateLabels.length; index++)
+                  Expanded(
+                    child: Text(
+                      dateLabels[index],
+                      key: ValueKey('parameter-chart-date-$index'),
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(fontSize: 9),
+                    ),
                   ),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  List<String> _dateLabels(BuildContext context) {
+    if (timeframe == _ChartTimeframe.week) {
+      const weekdays = ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
+      return List.generate(
+        7,
+        (index) => weekdays[windowStart.add(Duration(days: index)).weekday - 1],
+      );
+    }
+    final localizations = MaterialLocalizations.of(context);
+    const offsets = [0, 7, 14, 21, 29];
+    return [
+      for (final offset in offsets)
+        localizations.formatShortMonthDay(
+          windowStart.add(Duration(days: offset)),
         ),
-        if (readings.isEmpty)
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.show_chart_rounded,
-                color: VivariColors.textMuted.withValues(alpha: 0.65),
-                size: 26,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'No readings yet',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                timeframe == _ChartTimeframe.week
-                    ? 'Your last 7 days will appear here'
-                    : 'Your last 30 days will appear here',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(fontSize: 10),
-              ),
-            ],
-          ),
-      ],
-    ),
-  );
+    ];
+  }
 }
 
 class _ParameterReadingsPainter extends CustomPainter {

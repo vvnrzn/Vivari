@@ -226,9 +226,29 @@ void main() {
     expect(find.text('Week'), findsOneWidget);
     expect(find.text('Month'), findsOneWidget);
     expect(find.text('Custom'), findsNothing);
+    for (var index = 0; index < 7; index++) {
+      expect(
+        find.byKey(ValueKey('parameter-chart-date-$index')),
+        findsOneWidget,
+      );
+    }
+    expect(find.text('M'), findsOneWidget);
+    expect(find.text('Tu'), findsOneWidget);
+    expect(find.text('Th'), findsOneWidget);
     expect(find.text('STATUS'), findsOneWidget);
     expect(find.text('AVERAGE'), findsOneWidget);
     expect(find.text('OPTIMAL'), findsOneWidget);
+
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+    expect(find.text('No readings yet'), findsOneWidget);
+    for (var index = 0; index < 5; index++) {
+      expect(
+        find.byKey(ValueKey('parameter-chart-date-$index')),
+        findsOneWidget,
+      );
+    }
+    expect(find.byKey(const ValueKey('parameter-chart-date-5')), findsNothing);
   });
 
   testWidgets('range editor saves ranges for the selected water type', (
