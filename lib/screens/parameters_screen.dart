@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/aquarium.dart';
+import '../models/water_reading.dart';
 import '../theme/app_theme.dart';
 import '../widgets/vivari_add_button.dart';
 
@@ -241,9 +242,16 @@ List<WaterParameter> _defaultParameters() => const [
 ];
 
 class ParametersScreen extends StatefulWidget {
-  const ParametersScreen({this.aquariums = const [], super.key});
+  const ParametersScreen({
+    this.aquariums = const [],
+    this.readings = const [],
+    this.onReadingSaved,
+    super.key,
+  });
 
   final List<Aquarium> aquariums;
+  final List<WaterReading> readings;
+  final ValueChanged<WaterReading>? onReadingSaved;
 
   @override
   State<ParametersScreen> createState() => _ParametersScreenState();
@@ -302,18 +310,39 @@ class _ParametersScreenState extends State<ParametersScreen> {
     }
   }
 
-  void _showLoggingNotice() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Parameter logging is not available yet.')),
+  Future<void> _openLoggingScreen() async {
+    final aquarium = _selectedAquarium;
+    if (aquarium == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select an aquarium to log parameters.')),
+      );
+      return;
+    }
+    final reading = await Navigator.of(context).push<WaterReading>(
+      MaterialPageRoute<WaterReading>(
+        builder: (_) =>
+            LogParameterScreen(aquarium: aquarium, parameters: _parameters),
+      ),
     );
+    if (reading != null && mounted) {
+      widget.onReadingSaved?.call(reading);
+    }
   }
 
-  void _openDetails(WaterParameter parameter) {
-    Navigator.of(context).push<void>(
+  Future<void> _openDetails(WaterParameter parameter) async {
+    final aquarium = _selectedAquarium;
+    await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => ParameterDetailsScreen(
           parameter: parameter,
-          aquarium: _selectedAquarium,
+          aquarium: aquarium,
+          readings: widget.readings
+              .where(
+                (reading) =>
+                    reading.aquariumName == aquarium?.name &&
+                    reading.parameterId == parameter.id,
+              )
+              .toList(),
         ),
       ),
     );
@@ -328,7 +357,7 @@ class _ParametersScreenState extends State<ParametersScreen> {
     return Scaffold(
       backgroundColor: VivariColors.background,
       floatingActionButton: VivariAddButton(
-        onPressed: _showLoggingNotice,
+        onPressed: _openLoggingScreen,
         tooltip: 'Log Parameters',
       ),
       body: SafeArea(
@@ -384,6 +413,11 @@ class _ParametersScreenState extends State<ParametersScreen> {
               _ParameterListCard(
                 parameter: parameter,
                 aquarium: aquarium,
+                reading: _latestReading(
+                  widget.readings,
+                  aquarium?.name,
+                  parameter.id,
+                ),
                 onTap: () => _openDetails(parameter),
               ),
               const SizedBox(height: AppSpacing.small),
@@ -393,6 +427,370 @@ class _ParametersScreenState extends State<ParametersScreen> {
       ),
     );
   }
+}
+
+class LogParameterScreen extends StatefulWidget {
+  const LogParameterScreen({
+    required this.aquarium,
+    required this.parameters,
+    super.key,
+  });
+
+  final Aquarium aquarium;
+  final List<WaterParameter> parameters;
+
+  @override
+  State<LogParameterScreen> createState() => _LogParameterScreenState();
+}
+
+class _LogParameterScreenState extends State<LogParameterScreen> {
+  final _valueController = TextEditingController();
+  late final DateTime _initialNow;
+  late DateTime _date;
+  late TimeOfDay _time;
+  late WaterParameter? _selectedParameter;
+  bool _showAllParameters = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialNow = DateTime.now();
+    _date = _initialNow;
+    _time = TimeOfDay.fromDateTime(_initialNow);
+    _selectedParameter = widget.parameters
+        .where((parameter) => parameter.enabled)
+        .firstOrNull;
+  }
+
+  @override
+  void dispose() {
+    _valueController.dispose();
+    super.dispose();
+  }
+
+  List<WaterParameter> get _visibleParameters {
+    if (_showAllParameters) return widget.parameters;
+    return widget.parameters.where((parameter) => parameter.enabled).toList();
+  }
+
+  Future<void> _selectDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (date != null) setState(() => _date = date);
+  }
+
+  Future<void> _selectTime() async {
+    final time = await showTimePicker(context: context, initialTime: _time);
+    if (time != null) setState(() => _time = time);
+  }
+
+  void _setNow() {
+    final now = DateTime.now();
+    setState(() {
+      _date = now;
+      _time = TimeOfDay.fromDateTime(now);
+    });
+  }
+
+  void _save() {
+    final parameter = _selectedParameter;
+    final value = double.tryParse(_valueController.text.trim());
+    if (parameter == null || value == null || !value.isFinite || value < 0) {
+      return;
+    }
+    Navigator.of(context).pop(
+      WaterReading(
+        aquariumName: widget.aquarium.name,
+        parameterId: parameter.id,
+        parameterName: parameter.name,
+        value: value,
+        unit: parameter.unit,
+        measuredAt: DateTime(
+          _date.year,
+          _date.month,
+          _date.day,
+          _time.hour,
+          _time.minute,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedParameter = _selectedParameter;
+    final parsedValue = double.tryParse(_valueController.text.trim());
+    final canSave =
+        selectedParameter != null &&
+        parsedValue != null &&
+        parsedValue.isFinite &&
+        parsedValue >= 0;
+    final parameters = _visibleParameters;
+    final hasMore =
+        !_showAllParameters &&
+        widget.parameters.any((parameter) => !parameter.enabled);
+
+    return Scaffold(
+      backgroundColor: VivariColors.background,
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Close',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close),
+        ),
+        title: const Text('Add Measurements'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Done'),
+          ),
+          const SizedBox(width: AppSpacing.small),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screen,
+          AppSpacing.medium,
+          AppSpacing.screen,
+          AppSpacing.medium,
+        ),
+        children: [
+          Text(
+            'AQUARIUM',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.aquarium.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.medium),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: parameters.length + (hasMore ? 1 : 0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.82,
+            ),
+            itemBuilder: (context, index) {
+              if (hasMore && index == parameters.length) {
+                final hiddenCount =
+                    widget.parameters.length - parameters.length;
+                return OutlinedButton(
+                  onPressed: () => setState(() => _showAllParameters = true),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VivariColors.primary,
+                    side: const BorderSide(color: VivariColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('More'),
+                      Text(
+                        '+$hiddenCount',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: VivariColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final parameter = parameters[index];
+              final selected = parameter.id == selectedParameter?.id;
+              return InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => setState(() {
+                  _selectedParameter = parameter;
+                  _valueController.clear();
+                }),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? VivariColors.primary.withValues(alpha: 0.12)
+                        : VivariColors.surface,
+                    border: Border.all(
+                      color: selected
+                          ? VivariColors.primary
+                          : VivariColors.border,
+                      width: selected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        parameter.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: selected
+                                  ? VivariColors.primary
+                                  : VivariColors.textMuted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      Center(
+                        child: Text(
+                          selected && _valueController.text.isNotEmpty
+                              ? _valueController.text
+                              : '—',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontSize: 16,
+                                color: selected
+                                    ? VivariColors.textPrimary
+                                    : VivariColors.textMuted,
+                              ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          parameter.unit.isEmpty ? ' ' : parameter.unit,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(fontSize: 9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: AppSpacing.large),
+          Text('Value', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.small),
+          TextField(
+            key: const ValueKey('parameter-reading-value'),
+            controller: _valueController,
+            onChanged: (_) => setState(() {}),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              hintText: selectedParameter == null
+                  ? 'Select a parameter'
+                  : 'Enter ${selectedParameter.name} value',
+              suffixText: selectedParameter?.unit,
+              filled: true,
+              fillColor: VivariColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: VivariColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: VivariColors.border),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.medium),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Measurement Date',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              TextButton(onPressed: _setNow, child: const Text('Now')),
+            ],
+          ),
+          const SizedBox(height: 4),
+          _MeasurementDateTimeButton(
+            label: 'Date',
+            value: MaterialLocalizations.of(context).formatShortDate(_date),
+            icon: Icons.calendar_today_outlined,
+            onTap: _selectDate,
+          ),
+          const SizedBox(height: AppSpacing.small),
+          _MeasurementDateTimeButton(
+            label: 'Time',
+            value: _time.format(context),
+            icon: Icons.access_time,
+            onTap: _selectTime,
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(
+          AppSpacing.screen,
+          AppSpacing.small,
+          AppSpacing.screen,
+          AppSpacing.medium,
+        ),
+        child: FilledButton(
+          key: const ValueKey('add-measurement'),
+          onPressed: canSave ? _save : null,
+          child: const Text('Add Measurement'),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeasurementDateTimeButton extends StatelessWidget {
+  const _MeasurementDateTimeButton({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: Theme.of(context).textTheme.labelMedium),
+      const SizedBox(height: 6),
+      OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 54),
+          alignment: Alignment.centerLeft,
+          side: const BorderSide(color: VivariColors.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(value)),
+            Icon(icon, size: 18),
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 class _AquariumPills extends StatelessWidget {
@@ -452,16 +850,21 @@ class _ParameterListCard extends StatelessWidget {
   const _ParameterListCard({
     required this.parameter,
     required this.aquarium,
+    required this.reading,
     required this.onTap,
   });
 
   final WaterParameter parameter;
   final Aquarium? aquarium;
+  final WaterReading? reading;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final range = aquarium == null ? null : parameter.rangeFor(aquarium!.type);
+    final status = range == null
+        ? ParameterStatus.noReading
+        : _statusForReading(reading, range);
     return Material(
       color: VivariColors.surface,
       borderRadius: BorderRadius.circular(16),
@@ -494,10 +897,7 @@ class _ParameterListCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 5),
-                    const ParameterStatusBadge(
-                      status: ParameterStatus.noReading,
-                      compact: true,
-                    ),
+                    ParameterStatusBadge(status: status, compact: true),
                   ],
                 ),
               ),
@@ -506,9 +906,9 @@ class _ParameterListCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '—',
+                    reading == null ? '—' : _formatNumber(reading!.value),
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: VivariColors.positive,
+                      color: _statusColor(status),
                       fontSize: 21,
                     ),
                   ),
@@ -559,7 +959,7 @@ class ParameterStatusBadge extends StatelessWidget {
       ParameterStatus.belowRange => (
         'Below range',
         Icons.arrow_downward_rounded,
-        VivariColors.error,
+        VivariColors.warning,
       ),
       ParameterStatus.noReading => (
         'No readings',
@@ -606,11 +1006,13 @@ class ParameterDetailsScreen extends StatefulWidget {
   const ParameterDetailsScreen({
     required this.parameter,
     required this.aquarium,
+    this.readings = const [],
     super.key,
   });
 
   final WaterParameter parameter;
   final Aquarium? aquarium;
+  final List<WaterReading> readings;
 
   @override
   State<ParameterDetailsScreen> createState() => _ParameterDetailsScreenState();
@@ -624,110 +1026,151 @@ class _ParameterDetailsScreenState extends State<ParameterDetailsScreen> {
     final parameter = widget.parameter;
     final aquarium = widget.aquarium;
     final range = aquarium == null ? null : parameter.rangeFor(aquarium.type);
+    final readings =
+        widget.readings
+            .where(
+              (reading) =>
+                  reading.parameterId == parameter.id &&
+                  reading.aquariumName == aquarium?.name,
+            )
+            .toList()
+          ..sort((a, b) => a.measuredAt.compareTo(b.measuredAt));
+    final latestReading = readings.lastOrNull;
+    final status = range == null
+        ? ParameterStatus.noReading
+        : _statusForReading(latestReading, range);
+    final now = DateTime.now();
+    final timeframeDuration = Duration(
+      days: _timeframe == _ChartTimeframe.week ? 7 : 30,
+    );
+    final timeframeStart = now.subtract(timeframeDuration);
+    final timeframeReadings = readings
+        .where(
+          (reading) =>
+              !reading.measuredAt.isBefore(timeframeStart) &&
+              !reading.measuredAt.isAfter(now),
+        )
+        .toList();
+    final average = timeframeReadings.isEmpty
+        ? null
+        : timeframeReadings
+                  .map((reading) => reading.value)
+                  .reduce((sum, value) => sum + value) /
+              timeframeReadings.length;
     return Scaffold(
       backgroundColor: VivariColors.background,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screen,
-          AppSpacing.small,
-          AppSpacing.screen,
-          AppSpacing.large,
-        ),
-        children: [
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Back',
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.arrow_back),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      aquarium?.name.toUpperCase() ?? 'NO AQUARIUM SELECTED',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w700,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.medium,
+            AppSpacing.screen,
+            AppSpacing.large,
+          ),
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Back',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        aquarium?.name.toUpperCase() ?? 'NO AQUARIUM SELECTED',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      parameter.name,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '—',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: VivariColors.positive,
-                  fontSize: 21,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.medium),
-          Row(
-            children: [
-              _TimeframeChip(
-                label: 'Week',
-                selected: _timeframe == _ChartTimeframe.week,
-                onTap: () => setState(() => _timeframe = _ChartTimeframe.week),
-              ),
-              const SizedBox(width: AppSpacing.small),
-              _TimeframeChip(
-                label: 'Month',
-                selected: _timeframe == _ChartTimeframe.month,
-                onTap: () => setState(() => _timeframe = _ChartTimeframe.month),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.medium),
-          _ParameterChart(
-            range: range,
-            unit: parameter.unit,
-            timeframe: _timeframe,
-          ),
-          const SizedBox(height: AppSpacing.medium),
-          Row(
-            children: [
-              Expanded(
-                child: _ParameterStatCard(
-                  label: 'STATUS',
-                  child: const ParameterStatusBadge(
-                    status: ParameterStatus.noReading,
-                    compact: true,
+                      const SizedBox(height: 2),
+                      Text(
+                        parameter.name,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.small),
-              const Expanded(
-                child: _ParameterStatCard(label: 'AVERAGE', child: Text('—')),
-              ),
-              const SizedBox(width: AppSpacing.small),
-              Expanded(
-                child: _ParameterStatCard(
-                  label: 'OPTIMAL',
-                  child: Text(
-                    range == null
-                        ? 'Tank needed'
-                        : '${range.formatted}${parameter.unit.isEmpty ? '' : parameter.unit}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                const SizedBox(width: 8),
+                Text(
+                  latestReading == null
+                      ? '—'
+                      : _formatNumber(latestReading.value),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: _statusColor(status),
+                    fontSize: 21,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.medium),
+            Row(
+              children: [
+                _TimeframeChip(
+                  label: 'Week',
+                  selected: _timeframe == _ChartTimeframe.week,
+                  onTap: () =>
+                      setState(() => _timeframe = _ChartTimeframe.week),
+                ),
+                const SizedBox(width: AppSpacing.small),
+                _TimeframeChip(
+                  label: 'Month',
+                  selected: _timeframe == _ChartTimeframe.month,
+                  onTap: () =>
+                      setState(() => _timeframe = _ChartTimeframe.month),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.medium),
+            _ParameterChart(
+              range: range,
+              unit: parameter.unit,
+              timeframe: _timeframe,
+              readings: timeframeReadings,
+            ),
+            const SizedBox(height: AppSpacing.medium),
+            Row(
+              children: [
+                Expanded(
+                  child: _ParameterStatCard(
+                    label: 'STATUS',
+                    child: ParameterStatusBadge(status: status, compact: true),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.small),
+                Expanded(
+                  child: _ParameterStatCard(
+                    label: 'AVERAGE',
+                    child: Text(
+                      average == null ? '—' : _formatNumber(average),
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.small),
+                Expanded(
+                  child: _ParameterStatCard(
+                    label: 'OPTIMAL',
+                    child: Text(
+                      range == null
+                          ? 'Tank needed'
+                          : '${range.formatted}${parameter.unit.isEmpty ? '' : parameter.unit}',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -767,11 +1210,13 @@ class _ParameterChart extends StatelessWidget {
     required this.range,
     required this.unit,
     required this.timeframe,
+    required this.readings,
   });
 
   final ParameterRange? range;
   final String unit;
   final _ChartTimeframe timeframe;
+  final List<WaterReading> readings;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -792,34 +1237,123 @@ class _ParameterChart extends StatelessWidget {
               maximum: range?.maximum ?? 10,
               unit: unit,
             ),
+            foregroundPainter: readings.isEmpty
+                ? null
+                : _ParameterReadingsPainter(
+                    minimum: range?.minimum ?? 0,
+                    maximum: range?.maximum ?? 10,
+                    readings: readings,
+                    windowStart: DateTime.now().subtract(
+                      Duration(
+                        days: timeframe == _ChartTimeframe.week ? 7 : 30,
+                      ),
+                    ),
+                    windowEnd: DateTime.now(),
+                  ),
           ),
         ),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.show_chart_rounded,
-              color: VivariColors.textMuted.withValues(alpha: 0.65),
-              size: 26,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'No readings yet',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            Text(
-              timeframe == _ChartTimeframe.week
-                  ? 'Your last 7 days will appear here'
-                  : 'Your last 30 days will appear here',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(fontSize: 10),
-            ),
-          ],
-        ),
+        if (readings.isEmpty)
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.show_chart_rounded,
+                color: VivariColors.textMuted.withValues(alpha: 0.65),
+                size: 26,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'No readings yet',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                timeframe == _ChartTimeframe.week
+                    ? 'Your last 7 days will appear here'
+                    : 'Your last 30 days will appear here',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(fontSize: 10),
+              ),
+            ],
+          ),
       ],
     ),
   );
+}
+
+class _ParameterReadingsPainter extends CustomPainter {
+  const _ParameterReadingsPainter({
+    required this.minimum,
+    required this.maximum,
+    required this.readings,
+    required this.windowStart,
+    required this.windowEnd,
+  });
+
+  final double minimum;
+  final double maximum;
+  final List<WaterReading> readings;
+  final DateTime windowStart;
+  final DateTime windowEnd;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (readings.isEmpty) return;
+    const leftInset = 48.0;
+    const rightInset = 12.0;
+    const topInset = 16.0;
+    const bottomInset = 26.0;
+    final chartWidth = size.width - leftInset - rightInset;
+    final chartHeight = size.height - topInset - bottomInset;
+    final valueSpan = maximum - minimum;
+    if (chartWidth <= 0 || chartHeight <= 0 || valueSpan <= 0) return;
+    final timeSpan = windowEnd.difference(windowStart).inMilliseconds;
+    if (timeSpan <= 0) return;
+
+    Offset pointFor(WaterReading reading) {
+      final timeProgress =
+          reading.measuredAt.difference(windowStart).inMilliseconds / timeSpan;
+      final valueProgress = (reading.value - minimum) / valueSpan;
+      return Offset(
+        leftInset + chartWidth * timeProgress.clamp(0, 1),
+        topInset + chartHeight * (1 - valueProgress.clamp(0, 1)),
+      );
+    }
+
+    final points = readings.map(pointFor).toList();
+    final linePaint = Paint()
+      ..color = VivariColors.primary
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    if (points.length > 1) {
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (final point in points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(path, linePaint);
+    }
+    for (final point in points) {
+      canvas.drawCircle(point, 4, Paint()..color = VivariColors.primary);
+      canvas.drawCircle(
+        point,
+        6,
+        Paint()
+          ..color = VivariColors.surface
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ParameterReadingsPainter oldDelegate) =>
+      minimum != oldDelegate.minimum ||
+      maximum != oldDelegate.maximum ||
+      windowStart != oldDelegate.windowStart ||
+      windowEnd != oldDelegate.windowEnd ||
+      readings != oldDelegate.readings;
 }
 
 class _ParameterGridPainter extends CustomPainter {
@@ -1345,6 +1879,39 @@ String _formatNumber(double value) {
       .replaceFirst(RegExp(r'0+$'), '')
       .replaceFirst(RegExp(r'\.$'), '');
 }
+
+WaterReading? _latestReading(
+  List<WaterReading> readings,
+  String? aquariumName,
+  String parameterId,
+) {
+  if (aquariumName == null) return null;
+  WaterReading? latest;
+  for (final reading in readings) {
+    if (reading.aquariumName != aquariumName ||
+        reading.parameterId != parameterId) {
+      continue;
+    }
+    if (latest == null || reading.measuredAt.isAfter(latest.measuredAt)) {
+      latest = reading;
+    }
+  }
+  return latest;
+}
+
+ParameterStatus _statusForReading(WaterReading? reading, ParameterRange range) {
+  if (reading == null) return ParameterStatus.noReading;
+  if (reading.value < range.minimum) return ParameterStatus.belowRange;
+  if (reading.value > range.maximum) return ParameterStatus.aboveRange;
+  return ParameterStatus.withinRange;
+}
+
+Color _statusColor(ParameterStatus status) => switch (status) {
+  ParameterStatus.withinRange => VivariColors.positive,
+  ParameterStatus.aboveRange ||
+  ParameterStatus.belowRange => VivariColors.warning,
+  ParameterStatus.noReading => VivariColors.textMuted,
+};
 
 String _formatAxisNumber(double value) => value
     .toStringAsFixed(2)

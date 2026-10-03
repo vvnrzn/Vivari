@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:final_project/models/aquarium.dart';
 import 'package:final_project/models/care_record.dart';
+import 'package:final_project/models/water_reading.dart';
 import 'package:final_project/screens/add_task_screen.dart';
 import 'package:final_project/screens/care_screen.dart';
 import 'package:final_project/screens/log_activity_screen.dart';
@@ -67,9 +68,7 @@ void main() {
 
     expect(
       tester
-          .widget<TextButton>(
-            find.widgetWithText(TextButton, 'Create Task'),
-          )
+          .widget<TextButton>(find.widgetWithText(TextButton, 'Create Task'))
           .onPressed,
       isNotNull,
     );
@@ -194,5 +193,26 @@ void main() {
     final label = tester.widget<Text>(find.text(name));
     expect(label.maxLines, 1);
     expect(label.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('parameter readings appear in Care history', (tester) async {
+    final reading = WaterReading(
+      aquariumName: 'Tank A',
+      parameterId: 'ph',
+      parameterName: 'pH',
+      value: 7.2,
+      unit: '',
+      measuredAt: DateTime.now(),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CareScreen(aquariums: aquariums, waterReadings: [reading]),
+      ),
+    );
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('pH: 7.2'), findsOneWidget);
+    expect(find.textContaining('Tank A ·'), findsOneWidget);
   });
 }

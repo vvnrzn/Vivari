@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'models/aquarium.dart';
 import 'models/care_record.dart';
+import 'models/water_reading.dart';
 import 'screens/care_screen.dart';
 import 'screens/home_dashboard.dart';
 import 'screens/parameters_screen.dart';
@@ -49,6 +50,7 @@ class _VivariShellState extends State<VivariShell> {
   final List<Aquarium> _aquariums = [];
   final List<CareTask> _tasks = [];
   final List<CareActivity> _activities = [];
+  final List<WaterReading> _waterReadings = [];
   final List<CareTaskCompletion> _taskCompletions = [];
   final List<ActivityTemplate> _templates = [];
   final _CareDataNotifier _dataChanges = _CareDataNotifier();
@@ -72,6 +74,11 @@ class _VivariShellState extends State<VivariShell> {
       _activities.add(activity);
       if (template != null) _templates.add(template);
     });
+    _dataChanges.update();
+  }
+
+  void _logWaterReading(WaterReading reading) {
+    setState(() => _waterReadings.add(reading));
     _dataChanges.update();
   }
 
@@ -108,7 +115,11 @@ class _VivariShellState extends State<VivariShell> {
         builder: (_) => AnimatedBuilder(
           animation: _dataChanges,
           builder: (context, child) => switch (index) {
-            0 => ParametersScreen(aquariums: _aquariums),
+            0 => ParametersScreen(
+              aquariums: _aquariums,
+              readings: _waterReadings,
+              onReadingSaved: _logWaterReading,
+            ),
             1 => HomeDashboard(
               onSelectTab: _selectTab,
               aquariums: _aquariums,
@@ -120,6 +131,7 @@ class _VivariShellState extends State<VivariShell> {
               aquariums: _aquariums,
               tasks: _tasks,
               activities: _activities,
+              waterReadings: _waterReadings,
               taskCompletions: _taskCompletions,
               templates: _templates,
               onTaskCreated: _addTask,

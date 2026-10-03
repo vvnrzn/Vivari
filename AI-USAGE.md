@@ -53,11 +53,12 @@
 - **What I did instead:** I would simplify the layout so only the selected view is shown at a time, check that the view switcher fits within the screen width, and make the care content scrollable. I would then run the screen at different device sizes and confirm that all views display without overflow.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/46f392df8454d23a707e489f82c7b0fdd2a1a85f
 
-### Case 2 -
+### Case 2 - PARAMETER CHARTS/GRAPHS
 
-- **What it gave me:** 
-- **What was wrong with it:** 
-- **What I did instead:** 
+- **What it gave me:**  It built a custom parameter chart with Week and Month views. It filters the saved measurements to the selected aquarium and time period, plots values over time, and displays measurement-range values on the vertical axis. It also updates the latest reading, average, and status badge based on the logged data.
+- **What was wrong with it:** The chart positioned readings according to their measurement dates, but did not display date labels on the horizontal (x) axis. This made it difficult to tell when readings were taken or interpret the trend over the selected week or month.
+- **What I did instead:** I connected the chart to the saved parameter readings and added status and average calculations, and the graph with x-axis date labels. It now shows suitable dates along the bottom of the chart—for example, days of the week in Week view and dates or weekly intervals in Month view.
+- **Commit:**
 
 ### Case 3 -
 

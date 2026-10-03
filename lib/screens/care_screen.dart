@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/aquarium.dart';
 import '../models/care_record.dart';
+import '../models/water_reading.dart';
 import '../theme/app_theme.dart';
 import '../widgets/vivari_add_button.dart';
 import 'add_task_screen.dart';
@@ -16,6 +17,7 @@ class CareScreen extends StatefulWidget {
     this.aquariums = const [],
     this.tasks = const [],
     this.activities = const [],
+    this.waterReadings = const [],
     this.taskCompletions = const [],
     this.templates = const [],
     this.onTaskCreated,
@@ -27,6 +29,7 @@ class CareScreen extends StatefulWidget {
   final List<Aquarium> aquariums;
   final List<CareTask> tasks;
   final List<CareActivity> activities;
+  final List<WaterReading> waterReadings;
   final List<CareTaskCompletion> taskCompletions;
   final List<ActivityTemplate> templates;
   final ValueChanged<CareTask>? onTaskCreated;
@@ -126,6 +129,11 @@ class _CareScreenState extends State<CareScreen> {
                     completion.task.isAssociatedWithAquarium(aquariumName),
               )
               .toList();
+    final waterReadings = aquariumName == null
+        ? widget.waterReadings
+        : widget.waterReadings
+              .where((reading) => reading.aquariumName == aquariumName)
+              .toList();
 
     return Scaffold(
       backgroundColor: VivariColors.background,
@@ -170,6 +178,7 @@ class _CareScreenState extends State<CareScreen> {
               _CareView.month => _MonthViewContent(tasks: tasks),
               _CareView.history => _HistoryViewContent(
                 activities: activities,
+                waterReadings: waterReadings,
                 completions: completions,
                 onCompletionChanged: widget.onTaskCompletionChanged,
               ),
@@ -1062,11 +1071,13 @@ class _CalendarDay extends StatelessWidget {
 class _HistoryViewContent extends StatelessWidget {
   const _HistoryViewContent({
     required this.activities,
+    required this.waterReadings,
     required this.completions,
     required this.onCompletionChanged,
   });
 
   final List<CareActivity> activities;
+  final List<WaterReading> waterReadings;
   final List<CareTaskCompletion> completions;
   final void Function(CareTask task, DateTime date, bool completed)?
   onCompletionChanged;
@@ -1082,6 +1093,13 @@ class _HistoryViewContent extends StatelessWidget {
           (
             date: activity.loggedAt,
             child: _ActivityHistoryCard(activity: activity),
+          ),
+      for (final reading in waterReadings)
+        if (!reading.measuredAt.isBefore(cutoff) &&
+            !reading.measuredAt.isAfter(now))
+          (
+            date: reading.measuredAt,
+            child: _ParameterHistoryCard(reading: reading),
           ),
       for (final completion in completions)
         if (!completion.completedAt.isBefore(cutoff) &&
@@ -1136,7 +1154,7 @@ class _HistoryViewContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Logged activities and completed care tasks will appear here.',
+                  'Logged measurements, activities and completed care tasks will appear here.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -1144,6 +1162,29 @@ class _HistoryViewContent extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ParameterHistoryCard extends StatelessWidget {
+  const _ParameterHistoryCard({required this.reading});
+
+  final WaterReading reading;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = reading.value == reading.value.roundToDouble()
+        ? reading.value.toInt().toString()
+        : reading.value.toString();
+    final unit = reading.unit.isEmpty ? '' : ' ${reading.unit}';
+    final date = MaterialLocalizations.of(
+      context,
+    ).formatShortDate(reading.measuredAt);
+    return _HistoryCard(
+      title: '${reading.parameterName}: $value$unit',
+      subtitle: '${reading.aquariumName} · $date',
+      checked: true,
+      indicatorColor: VivariColors.primary,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:final_project/models/aquarium.dart';
+import 'package:final_project/models/water_reading.dart';
 import 'package:final_project/screens/parameters_screen.dart';
 
 void main() {
@@ -61,6 +62,81 @@ void main() {
     expect(find.text('24–27°C'), findsOneWidget);
     expect(find.text('8.1–8.4'), findsOneWidget);
     expect(find.text('All Tanks'), findsNothing);
+  });
+
+  testWidgets('parameter logging uses selected tank and updates chart status', (
+    tester,
+  ) async {
+    final aquariums = [
+      Aquarium(
+        name: 'Tank A',
+        type: AquariumType.freshwater,
+        volume: 40,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+      ),
+      Aquarium(
+        name: 'Tank B',
+        type: AquariumType.saltwater,
+        volume: 80,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+      ),
+    ];
+    var readings = <WaterReading>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) => ParametersScreen(
+            aquariums: aquariums,
+            readings: readings,
+            onReadingSaved: (reading) =>
+                setState(() => readings = [...readings, reading]),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Tank B').first);
+    await tester.tap(find.byTooltip('Log Parameters'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LogParameterScreen), findsOneWidget);
+    expect(find.text('Tank B'), findsWidgets);
+
+    await tester.tap(find.text('pH'));
+    final valueField = find.byKey(const ValueKey('parameter-reading-value'));
+    await tester.scrollUntilVisible(
+      valueField,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.enterText(valueField, '9');
+    await tester.pump();
+    expect(tester.widget<TextField>(valueField).controller?.text, '9');
+    final addButton = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('add-measurement')),
+    );
+    expect(addButton.onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('add-measurement')));
+    await tester.pumpAndSettle();
+
+    expect(readings, hasLength(1));
+    expect(readings.single.aquariumName, 'Tank B');
+    expect(readings.single.parameterId, 'ph');
+    expect(readings.single.value, 9);
+
+    await tester.scrollUntilVisible(
+      find.text('pH'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('pH'));
+    await tester.pumpAndSettle();
+    expect(find.text('9'), findsWidgets);
+    expect(find.text('Above range'), findsOneWidget);
+    expect(find.text('No readings yet'), findsNothing);
+    expect(find.text('AVERAGE'), findsOneWidget);
   });
 
   testWidgets('long aquarium names are ellipsized in parameter filters', (
