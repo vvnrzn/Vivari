@@ -18,6 +18,7 @@ class HomeDashboard extends StatefulWidget {
     required this.activities,
     required this.onAquariumAdded,
     this.taskCompletions = const [],
+    this.onOpenAquariumTasks,
     this.onAquariumUpdated,
     this.onAquariumDeleted,
     super.key,
@@ -29,6 +30,7 @@ class HomeDashboard extends StatefulWidget {
   final List<CareActivity> activities;
   final List<CareTaskCompletion> taskCompletions;
   final ValueChanged<Aquarium> onAquariumAdded;
+  final ValueChanged<Aquarium>? onOpenAquariumTasks;
   final void Function(Aquarium previous, Aquarium updated)? onAquariumUpdated;
   final ValueChanged<Aquarium>? onAquariumDeleted;
 
@@ -63,6 +65,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   void _openCare(BuildContext context) {
     widget.onSelectTab(2);
+  }
+
+  void _openAquariumTasks(BuildContext context, Aquarium aquarium) {
+    final callback = widget.onOpenAquariumTasks;
+    if (callback != null) {
+      callback(aquarium);
+    } else {
+      _openCare(context);
+    }
   }
 
   CareActivity? _latestActivity(String name) {
@@ -250,6 +261,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 child: _AquariumCard(
                   aquarium: aquarium,
                   pendingTaskCount: _pendingTaskCount(aquarium),
+                  onPendingTasksTap: () =>
+                      _openAquariumTasks(context, aquarium),
                   onTap: () => _openAquarium(context, aquarium),
                 ),
               ),
@@ -303,11 +316,13 @@ class _AquariumCard extends StatelessWidget {
   const _AquariumCard({
     required this.aquarium,
     required this.pendingTaskCount,
+    required this.onPendingTasksTap,
     required this.onTap,
   });
 
   final Aquarium aquarium;
   final int pendingTaskCount;
+  final VoidCallback onPendingTasksTap;
   final VoidCallback onTap;
 
   @override
@@ -408,6 +423,8 @@ class _AquariumCard extends StatelessWidget {
                       key: const ValueKey('pending-task-badge'),
                       label: '$pendingTaskCount',
                       color: VivariColors.warning,
+                      tooltip: 'View pending tasks for ${aquarium.name}',
+                      onTap: onPendingTasksTap,
                     ),
                     const SizedBox(width: AppSpacing.small),
                   ],
@@ -445,14 +462,22 @@ class _AquariumMetadata extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({super.key, required this.label, required this.color});
+  const _Badge({
+    super.key,
+    required this.label,
+    required this.color,
+    this.tooltip,
+    this.onTap,
+  });
 
   final String label;
   final Color color;
+  final String? tooltip;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final badge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.16),
@@ -467,6 +492,16 @@ class _Badge extends StatelessWidget {
         ),
       ),
     );
+    final interactiveBadge = onTap == null
+        ? badge
+        : InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: badge,
+          );
+    return tooltip == null
+        ? interactiveBadge
+        : Tooltip(message: tooltip!, child: interactiveBadge);
   }
 }
 

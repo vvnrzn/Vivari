@@ -23,6 +23,8 @@ class CareScreen extends StatefulWidget {
     this.onTaskCreated,
     this.onActivityLogged,
     this.onTaskCompletionChanged,
+    this.navigationAquariumName,
+    this.navigationRequest = 0,
     super.key,
   });
 
@@ -37,6 +39,8 @@ class CareScreen extends StatefulWidget {
   onActivityLogged;
   final void Function(CareTask task, DateTime scheduledDate, bool completed)?
   onTaskCompletionChanged;
+  final String? navigationAquariumName;
+  final int navigationRequest;
 
   @override
   State<CareScreen> createState() => _CareScreenState();
@@ -45,6 +49,21 @@ class CareScreen extends StatefulWidget {
 class _CareScreenState extends State<CareScreen> {
   _CareView _selectedView = _CareView.list;
   String? _selectedAquariumName;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedAquariumName = widget.navigationAquariumName;
+  }
+
+  @override
+  void didUpdateWidget(covariant CareScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.navigationRequest != oldWidget.navigationRequest) {
+      _selectedAquariumName = widget.navigationAquariumName;
+      _selectedView = _CareView.list;
+    }
+  }
 
   Future<void> _openAddOptions() async {
     final selection = await showModalBottomSheet<String>(

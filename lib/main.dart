@@ -47,6 +47,8 @@ class _VivariShellState extends State<VivariShell> {
     (_) => GlobalKey<NavigatorState>(),
   );
   int _selectedIndex = 1;
+  String? _careAquariumName;
+  int _careNavigationRequest = 0;
   final List<Aquarium> _aquariums = [];
   final List<CareTask> _tasks = [];
   final List<CareActivity> _activities = [];
@@ -57,6 +59,15 @@ class _VivariShellState extends State<VivariShell> {
 
   void _selectTab(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  void _openAquariumTasks(Aquarium aquarium) {
+    setState(() {
+      _selectedIndex = 2;
+      _careAquariumName = aquarium.name;
+      _careNavigationRequest++;
+    });
+    _dataChanges.update();
   }
 
   void _addAquarium(Aquarium aquarium) {
@@ -143,6 +154,7 @@ class _VivariShellState extends State<VivariShell> {
               taskCompletions: _taskCompletions,
               activities: _activities,
               onAquariumAdded: _addAquarium,
+              onOpenAquariumTasks: _openAquariumTasks,
               onAquariumUpdated: _updateAquarium,
               onAquariumDeleted: _deleteAquarium,
             ),
@@ -153,6 +165,8 @@ class _VivariShellState extends State<VivariShell> {
               waterReadings: _waterReadings,
               taskCompletions: _taskCompletions,
               templates: _templates,
+              navigationAquariumName: _careAquariumName,
+              navigationRequest: _careNavigationRequest,
               onTaskCreated: _addTask,
               onActivityLogged: _logActivity,
               onTaskCompletionChanged: _setTaskCompletion,
