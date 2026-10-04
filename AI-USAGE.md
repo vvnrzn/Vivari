@@ -65,6 +65,7 @@
 - **What it gave me:** Copilot updated the Care screen’s aquarium filter to scroll horizontally and added a test for accessing additional tanks.
 - **What was wrong with it:** The filter still didn’t scroll reliably in the app, and the bottom of the pills was clipped. The visible scrollbar also wasn’t wanted.
 - **What I did instead:** I asked fixed the interaction and layout by adding horizontal drag and wheel scrolling, adjusted the filter’s height and padding to prevent clipping, and hid the scrollbar while keeping scrolling available. I verified the fix with widget tests.
+- **Commit:** https://github.com/vvnrzn/Vivari/commit/4a0411f4ec99a1fc69a20faf8b890f2ac56e6387
 
 
 ## 3. Who wrote what
