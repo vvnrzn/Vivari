@@ -30,12 +30,12 @@
 - **What I kept, what I changed, and why:** I kept the primary logging flow, date/time picking, and cross-screen state updates because the data propagation to the charts and Care history functioned smoothly. However, I made several UI and logic refinements to clean up the user experience. I removed redundant action buttons (such as the extraneous "Done" button when "Log Parameter" already submitted the form) to reduce visual clutter, added missing parameter units next to raw numbers on the main Parameters page for visual clarity, and filtered the parameter dropdown in the Log Parameters screen so it strictly displays parameters currently toggled ON in the settings.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/a03ed00093cf9847636f291af0b628d77c61f480
 
-### -- 
-- **Tool:** 
-- **What I asked for:**
-- **What it gave back:** 
-- **What I kept, what I changed, and why:** 
-- **Commit:** 
+### Home Dashboard tests
+- **Tool:** Copilot
+- **What I asked for:**  I requested updates to the Home Dashboard widgets so that the last water change and dosing display relative dates (e.g., "Today" or "{no.} days ago") instead of full dates, accompanied by a smaller caption with an ellipsis rule for long names, a bullet separator, and the corresponding amount and unit on the right. I also asked to add a warning-colored pending task count badge to the left of the water type on aquarium cards that only appears when pending tasks exist (>0) and is completely omitted if zero, along with corresponding widget test coverage.
+- **What it gave back:**  Aside from the dashboard changes itself, The assistant implemented the dashboard logic and delivered modular widget test suites—specifically validating that latest activities show relative dates with compact details, that aquarium cards display a count-only pending badge when needed, and that the badge is successfully omitted when the pending count is zero.
+- **What I kept, what I changed, and why:** I kept the relative date formatting, conditional pending badge logic, and test cases because they provided a solid foundation for the dashboard update. However, I made several UI and state refinements: I ensured both lines of text align properly when data exists in the last water change/dosing views, prepended the tank name to the amount and unit, left-aligned this text block to eliminate awkward spacing for shorter names, matched the relative date font size to the "no tasks due today" label.
+- **Commit:**  https://github.com/vvnrzn/Vivari/commit/d0c53bfcd214f3bd751f1bb34ae16f0c022ab8d6
 
 ### -- 
 - **Tool:** 
@@ -46,7 +46,7 @@
 
 ## 2. Where the AI got it wrong
 
-### Case 1 - Care screen layout overflow
+### Case 1 - CARE SCREEN SEPARATE VIEWS OVERFLOW
 
 - **What it gave me:** Copilot generated a Care screen with multiple views, but the layout displayed them incorrectly: one view was squeezed and part of the Week view peeked in from the right. The screen also produced vertical RenderFlex overflow errors, with content extending beyond the available space.
 - **What was wrong with it:** The Care screen’s layout did not fit the available space. One view was squeezed, while part of the Week view appeared at the right edge. The fixed vertical layout also overflowed the screen, making content extend beyond the visible area and triggering several RenderFlex overflow errors.
@@ -74,12 +74,12 @@ it in your own words.
 
 ### Written by me
 
-- **File:**
+- **File:** aquarium.dart, care_record.dart, water_reading.dart, and app_theme.dart
 - **Commit:**
-- **What it does and why it is built this way:**
+- **What it does and why it is built this way:** I used the model files to describe the information my app works with, such as aquariums, care tasks, activities, and water readings. Keeping this information in separate classes makes it easier for the app to pass it between screens and work with it consistently. I also made a central app theme for the shared colors, text styles, spacing, and common widget styles, so the screens look like they belong to the same app.
 
 ### The AI-written part I understand best
 
-- **File:**
+- **File:** `aquarium_multi_select_sheet.dart`, `empty_state.dart`, `summary_card.dart`, `vivari_add_button.dart`, `vivari_bottom_navigation.dart`, and `vivari_card.dart` in the `widgets` folder
 - **Commit:**
-- **What it does and why we kept it:**
+- **What it does and why we kept it:** These files contain reusable parts of the app's interface. They let the app show a consistent card, summary, empty state, add button, bottom navigation, and a sheet for selecting aquariums. We kept them as separate widgets so screens can reuse the same interface elements instead of repeating the same layout code, which makes the app easier to keep consistent and update.
