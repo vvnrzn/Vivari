@@ -67,6 +67,7 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
         volumeUnit: _volumeUnit,
         createdAt: _createdAt,
         photoBytes: photoBytes,
+        inhabitants: widget.initialAquarium?.inhabitants ?? const [],
       ),
     );
   }

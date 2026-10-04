@@ -52,7 +52,9 @@ flutter run -d chrome
 ### Aquarium Details
 
 * View aquarium information, tasks needing attention, and inhabitants.
-* Edit aquarium details or add and manage inhabitants.
+* Filter inhabitants by type, add matching freshwater or saltwater species, and edit quantities.
+* Search the local mock catalog by common name, scientific name, and keywords.
+* The current catalog is stored in `assets/data/inhabitants.json`; no catalog API is required.
 
 ### Parameters
 
@@ -71,14 +73,21 @@ flutter run -d chrome
 ## 5. Project structure
 
 ```text
+assets/
+└── data/
+    └── inhabitants.json
 lib/
 ├── main.dart
+├── data/
+│   └── inhabitant_catalog.dart
 ├── models/
 │   ├── aquarium.dart
 │   ├── care_record.dart
+│   ├── inhabitant.dart
 │   └── water_reading.dart
 ├── screens/
 │   ├── add_aquarium_screen.dart
+│   ├── add_inhabitant_screen.dart
 │   ├── add_task_screen.dart
 │   ├── aquarium_details_screen.dart
 │   ├── care_screen.dart

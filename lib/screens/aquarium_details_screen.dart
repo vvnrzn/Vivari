@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/aquarium.dart';
+import '../models/inhabitant.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
 import 'add_aquarium_screen.dart';
+import 'add_inhabitant_screen.dart';
 
 class AquariumDetailsScreen extends StatefulWidget {
   const AquariumDetailsScreen({
@@ -26,6 +28,7 @@ class AquariumDetailsScreen extends StatefulWidget {
 
 class _AquariumDetailsScreenState extends State<AquariumDetailsScreen> {
   late Aquarium _aquarium = widget.aquarium;
+  InhabitantCategory? _selectedCategory;
 
   @override
   void didUpdateWidget(covariant AquariumDetailsScreen oldWidget) {
@@ -53,14 +56,184 @@ class _AquariumDetailsScreenState extends State<AquariumDetailsScreen> {
     }
   }
 
+  List<String> get _categories => [
+    'Fish',
+    'Inverts',
+    'Plants',
+    if (_aquarium.type == AquariumType.saltwater) 'Corals',
+  ];
+
+  int _categoryQuantity(String category) => _aquarium.inhabitants
+      .where((inhabitant) => inhabitant.entry.category.label == category)
+      .fold(0, (total, inhabitant) => total + inhabitant.quantity);
+
+  List<AquariumInhabitant> get _visibleInhabitants => _selectedCategory == null
+      ? _aquarium.inhabitants
+      : _aquarium.inhabitants
+            .where(
+              (inhabitant) => inhabitant.entry.category == _selectedCategory,
+            )
+            .toList();
+
+  void _saveInhabitants(List<AquariumInhabitant> inhabitants) {
+    final previous = _aquarium;
+    final updated = _aquarium.copyWith(inhabitants: inhabitants);
+    setState(() => _aquarium = updated);
+    widget.onAquariumUpdated?.call(previous, updated);
+  }
+
+  Future<void> _addInhabitants() async {
+    final added = await Navigator.of(context).push<List<AquariumInhabitant>>(
+      MaterialPageRoute<List<AquariumInhabitant>>(
+        builder: (_) => AddInhabitantScreen(waterType: _aquarium.type),
+      ),
+    );
+    if (!mounted || added == null || added.isEmpty) return;
+
+    final inhabitants = [..._aquarium.inhabitants];
+    for (final inhabitant in added) {
+      final index = inhabitants.indexWhere(
+        (existing) => existing.entry.id == inhabitant.entry.id,
+      );
+      if (index == -1) {
+        inhabitants.add(inhabitant);
+      } else {
+        inhabitants[index] = inhabitants[index].copyWith(
+          quantity: inhabitants[index].quantity + inhabitant.quantity,
+        );
+      }
+    }
+    _saveInhabitants(inhabitants);
+  }
+
+  Future<void> _editInhabitant(AquariumInhabitant inhabitant) async {
+    var quantity = inhabitant.quantity;
+    final action = await showDialog<_InhabitantEditAction>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: VivariColors.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: VivariColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.medium),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Edit Inhabitant',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.medium),
+                  decoration: BoxDecoration(
+                    color: VivariColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: VivariColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        inhabitant.entry.commonName,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        inhabitant.entry.scientificName,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: VivariColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                Text('Quantity', style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: AppSpacing.small),
+                Container(
+                  decoration: BoxDecoration(
+                    color: VivariColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: VivariColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        tooltip: 'Decrease quantity',
+                        onPressed: quantity > 1
+                            ? () => setDialogState(() => quantity--)
+                            : null,
+                        icon: const Icon(Icons.remove),
+                      ),
+                      Text(
+                        '$quantity',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      IconButton(
+                        tooltip: 'Increase quantity',
+                        onPressed: () => setDialogState(() => quantity++),
+                        icon: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(
+                      dialogContext,
+                    ).pop(_InhabitantEditAction.save(quantity)),
+                    child: const Text('Save Changes'),
+                  ),
+                ),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.of(
+                      dialogContext,
+                    ).pop(const _InhabitantEditAction.remove()),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Remove'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: VivariColors.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+
+    final inhabitants = [..._aquarium.inhabitants];
+    final index = inhabitants.indexWhere(
+      (entry) => entry.entry.id == inhabitant.entry.id,
+    );
+    if (index == -1) return;
+    if (action.remove) {
+      inhabitants.removeAt(index);
+    } else {
+      inhabitants[index] = inhabitants[index].copyWith(
+        quantity: action.quantity,
+      );
+    }
+    _saveInhabitants(inhabitants);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final categories = [
-      'Fish',
-      'Inverts',
-      'Plants',
-      if (_aquarium.type == AquariumType.saltwater) 'Corals',
-    ];
+    final categories = _categories;
+    final inhabitants = _visibleInhabitants;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -97,24 +270,60 @@ class _AquariumDetailsScreenState extends State<AquariumDetailsScreen> {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () {},
+                        onPressed: _addInhabitants,
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text('Add Inhabitant'),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.small),
-                  _CategoryScroller(categories: categories),
-                  const SizedBox(height: AppSpacing.medium),
-                  const SizedBox(
-                    width: double.infinity,
-                    child: EmptyState(
-                      title: 'No inhabitants yet',
-                      message:
-                          'Your aquarium is ready for its first inhabitants.',
-                      icon: Icons.bubble_chart_outlined,
-                    ),
+                  _CategoryScroller(
+                    categories: categories,
+                    selectedCategory: _selectedCategory?.label,
+                    categoryQuantity: _categoryQuantity,
+                    onSelectionChanged: (category) {
+                      setState(() {
+                        _selectedCategory = category == null
+                            ? null
+                            : InhabitantCategory.fromJson(category);
+                      });
+                    },
                   ),
+                  const SizedBox(height: AppSpacing.medium),
+                  if (inhabitants.isEmpty)
+                    SizedBox(
+                      width: double.infinity,
+                      child: EmptyState(
+                        title: _aquarium.inhabitants.isEmpty
+                            ? 'No inhabitants yet'
+                            : 'No ${_selectedCategory!.label.toLowerCase()} yet',
+                        message: _aquarium.inhabitants.isEmpty
+                            ? 'Your aquarium is ready for its first inhabitants.'
+                            : 'Add an inhabitant in this category to see it here.',
+                        icon: Icons.bubble_chart_outlined,
+                      ),
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cardWidth =
+                            (constraints.maxWidth - AppSpacing.small) / 2;
+                        return Wrap(
+                          spacing: AppSpacing.small,
+                          runSpacing: AppSpacing.small,
+                          children: [
+                            for (final inhabitant in inhabitants)
+                              SizedBox(
+                                width: cardWidth,
+                                child: _InhabitantCard(
+                                  inhabitant: inhabitant,
+                                  onTap: () => _editInhabitant(inhabitant),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
@@ -126,9 +335,17 @@ class _AquariumDetailsScreenState extends State<AquariumDetailsScreen> {
 }
 
 class _CategoryScroller extends StatefulWidget {
-  const _CategoryScroller({required this.categories});
+  const _CategoryScroller({
+    required this.categories,
+    required this.categoryQuantity,
+    required this.onSelectionChanged,
+    this.selectedCategory,
+  });
 
   final List<String> categories;
+  final String? selectedCategory;
+  final int Function(String category) categoryQuantity;
+  final ValueChanged<String?> onSelectionChanged;
 
   @override
   State<_CategoryScroller> createState() => _CategoryScrollerState();
@@ -181,11 +398,25 @@ class _CategoryScrollerState extends State<_CategoryScroller> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  for (var index = 0;
-                      index < widget.categories.length;
-                      index++) ...[
+                  for (
+                    var index = 0;
+                    index < widget.categories.length;
+                    index++
+                  ) ...[
                     if (index > 0) const SizedBox(width: AppSpacing.small),
-                    _CategoryChip(label: widget.categories[index]),
+                    _CategoryChip(
+                      label: widget.categories[index],
+                      quantity: widget.categoryQuantity(
+                        widget.categories[index],
+                      ),
+                      selected:
+                          widget.selectedCategory == widget.categories[index],
+                      onTap: () => widget.onSelectionChanged(
+                        widget.selectedCategory == widget.categories[index]
+                            ? null
+                            : widget.categories[index],
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -318,39 +549,57 @@ class _AquariumHero extends StatelessWidget {
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.label});
+  const _CategoryChip({
+    required this.label,
+    required this.quantity,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
+  final int quantity;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
-        color: VivariColors.secondary,
+    final foreground = selected
+        ? VivariColors.background
+        : VivariColors.textMuted;
+    return Material(
+      color: selected ? VivariColors.primary : VivariColors.secondary,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: VivariColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (label == 'Fish')
-            const _FishIcon()
-          else
-            Icon(
-              _iconForCategory(label),
-              size: 15,
-              color: VivariColors.textMuted,
-            ),
-          const SizedBox(width: AppSpacing.small),
-          Text(
-            '$label  (0)',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: VivariColors.textPrimary,
-              fontWeight: FontWeight.w600,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: selected ? VivariColors.primary : VivariColors.border,
             ),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (label == 'Fish')
+                _FishIcon(color: foreground)
+              else
+                Icon(_iconForCategory(label), size: 15, color: foreground),
+              const SizedBox(width: AppSpacing.small),
+              Text(
+                '$label  ($quantity)',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: selected
+                      ? VivariColors.background
+                      : VivariColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -364,23 +613,27 @@ class _CategoryChip extends StatelessWidget {
 }
 
 class _FishIcon extends StatelessWidget {
-  const _FishIcon();
+  const _FishIcon({required this.color});
+
+  final Color color;
 
   @override
-  Widget build(BuildContext context) => const SizedBox(
+  Widget build(BuildContext context) => SizedBox(
     width: 15,
     height: 15,
-    child: CustomPaint(painter: _FishIconPainter()),
+    child: CustomPaint(painter: _FishIconPainter(color)),
   );
 }
 
 class _FishIconPainter extends CustomPainter {
-  const _FishIconPainter();
+  const _FishIconPainter(this.color);
+
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = VivariColors.textMuted
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4
       ..strokeCap = StrokeCap.round
@@ -414,12 +667,73 @@ class _FishIconPainter extends CustomPainter {
       ..drawCircle(
         Offset(size.width * 0.34, size.height * 0.43),
         0.7,
-        Paint()..color = VivariColors.textMuted,
+        Paint()..color = color,
       );
   }
 
   @override
   bool shouldRepaint(covariant _FishIconPainter oldDelegate) => false;
+}
+
+class _InhabitantCard extends StatelessWidget {
+  const _InhabitantCard({required this.inhabitant, required this.onTap});
+
+  final AquariumInhabitant inhabitant;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: VivariColors.secondary,
+    borderRadius: BorderRadius.circular(24),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.medium,
+          vertical: 14,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: VivariColors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.small),
+            Expanded(
+              child: Text(
+                inhabitant.entry.commonName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (inhabitant.quantity > 1) ...[
+              const SizedBox(width: AppSpacing.small),
+              Text(
+                'x${inhabitant.quantity}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _InhabitantEditAction {
+  const _InhabitantEditAction.save(this.quantity) : remove = false;
+  const _InhabitantEditAction.remove() : quantity = 0, remove = true;
+
+  final int quantity;
+  final bool remove;
 }
 
 String _formatVolume(double volume) => volume == volume.roundToDouble()

@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:final_project/models/aquarium.dart';
+import 'package:final_project/screens/add_inhabitant_screen.dart';
 import 'package:final_project/screens/aquarium_details_screen.dart';
 import 'package:final_project/screens/home_dashboard.dart';
 import 'package:final_project/theme/app_theme.dart';
@@ -86,6 +87,61 @@ void main() {
       expect(tester.getTopLeft(fishChip).dx, lessThan(48));
     },
   );
+
+  testWidgets('add inhabitant supports keyword search and quantity editing', (
+    tester,
+  ) async {
+    final aquarium = _aquarium(AquariumType.freshwater);
+    Aquarium? updatedAquarium;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: VivariTheme.app,
+        home: AquariumDetailsScreen(
+          aquarium: aquarium,
+          onAquariumUpdated: (_, updated) => updatedAquarium = updated,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add Inhabitant'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AddInhabitantScreen), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('inhabitant-search-field')),
+      'fighting fish',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Betta Fish'), findsOneWidget);
+    expect(find.text('GloFish Tetra'), findsNothing);
+
+    await tester.tap(find.text('Betta Fish'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add to Aquarium (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Betta Fish'), findsOneWidget);
+    await tester.tap(find.text('Betta Fish'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Inhabitant'), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+
+    await tester.tap(find.byTooltip('Increase quantity'));
+    await tester.tap(find.text('Save Changes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('x2'), findsOneWidget);
+    expect(find.text('Fish  (2)'), findsOneWidget);
+    expect(updatedAquarium?.inhabitants.single.quantity, 2);
+
+    await tester.tap(find.text('Plants  (0)'));
+    await tester.pumpAndSettle();
+    expect(find.text('No plants yet'), findsOneWidget);
+    await tester.tap(find.text('Fish  (2)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Betta Fish'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('deleting an aquarium requires confirmation and removes it', (
     tester,
