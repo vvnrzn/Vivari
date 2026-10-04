@@ -60,7 +60,7 @@
 - **What I did instead:** I connected the chart to the saved parameter readings and added status and average calculations, and the graph with x-axis date labels. It now shows suitable dates along the bottom of the chart—for example, days of the week in Week view and dates or weekly intervals in Month view.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/b5157c580c1b2ae54e6c2e61a6ef99051d751761
 
-### Case 3 - Fixing the Care tank filter
+### Case 3 - Care tank filter
 
 - **What it gave me:** Copilot updated the Care screen’s aquarium filter to scroll horizontally and added a test for accessing additional tanks.
 - **What was wrong with it:** The filter still didn’t scroll reliably in the app, and the bottom of the pills was clipped. The visible scrollbar also wasn’t wanted.
@@ -69,9 +69,6 @@
 
 
 ## 3. Who wrote what
-
-At least a fifth of this project is code you wrote yourself. Name it, and explain
-it in your own words.
 
 ### Written by me
 
