@@ -72,12 +72,54 @@
 
 ### Written by me
 
-- **File:** aquarium.dart, care_record.dart, water_reading.dart, and app_theme.dart
-- **Commit:**
-- **What it does and why it is built this way:** I used the model files to describe the information my app works with, such as aquariums, care tasks, activities, and water readings. Keeping this information in separate classes makes it easier for the app to pass it between screens and work with it consistently. I also made a central app theme for the shared colors, text styles, spacing, and common widget styles, so the screens look like they belong to the same app.
+#### `lib/models/aquarium.dart`
+
+- **Commit:** [e94adc6](https://github.com/vvnrzn/Vivari/commit/e94adc62ca7617ec68b2705ad02d1ec2b6c888c0)
+- **What it does and why I built it this way:** `Aquarium` holds a tank’s name, freshwater or saltwater type, volume and unit, creation date, optional photo bytes, and inhabitants. Its `copyWith` method makes it possible to update selected properties, such as the name or inhabitants, without rebuilding the object manually or losing the other values.
+
+#### `lib/models/care_record.dart`
+
+- **Commit:** [1895c97](https://github.com/vvnrzn/Vivari/commit/1895c976321b57c32924f8265736816be3cfcf1b)
+- **What it does and why I built it this way:** This file defines separate data types for care tasks, logged care activities, completed task occurrences, and reusable activity templates. A care task also records recurrence settings, and `isDueOn` determines whether a task is due on a given date for one-time, interval, weekday, or month-day schedules. Keeping these records distinct lets the app represent scheduled tasks, what the user actually logged, and task completions without conflating them.
+
+#### `lib/models/water_reading.dart`
+
+- **Commit:** [a03ed00](https://github.com/vvnrzn/Vivari/commit/a03ed00093cf9847636f291af0b628d77c61f480)
+- **What it does and why I built it this way:** `WaterReading` records the aquarium name, parameter ID and display name, measured value and unit, and measurement time. Keeping those details together gives the parameters screen a consistent record to display for each reading.
+
+#### `lib/theme/app_theme.dart`
+
+- **Commit:** [7dbb54c](https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f)
+- **What it does and why I built it this way:** This file defines the shared color palette and spacing values, then configures the Material theme’s text styles and common card, button, icon, divider, and app-bar appearances. Centralizing those choices means screens can share the same visual styles instead of defining them separately.
 
 ### The AI-written part I understand best
 
-- **File:** `aquarium_multi_select_sheet.dart`, `empty_state.dart`, `summary_card.dart`, `vivari_add_button.dart`, `vivari_bottom_navigation.dart`, and `vivari_card.dart` in the `widgets` folder
-- **Commit:**
-- **What it does and why we kept it:** These files contain reusable parts of the app's interface. They let the app show a consistent card, summary, empty state, add button, bottom navigation, and a sheet for selecting aquariums. We kept them as separate widgets so screens can reuse the same interface elements instead of repeating the same layout code, which makes the app easier to keep consistent and update.
+#### `lib/widgets/aquarium_multi_select_sheet.dart`
+
+- **Commit:** [cb0d38f](https://github.com/vvnrzn/Vivari/commit/cb0d38fff7b24f822b24e87d5c1e874047649983)
+- **What it does and why we kept it:** This function opens a bottom sheet showing each aquarium with a checkbox and volume label. Users can select multiple aquariums and tap **Done** to return the selection, so screens can offer tank filtering or assignment without implementing their own selection sheet.
+
+#### `lib/widgets/empty_state.dart`
+
+- **Commit:** [7dbb54c](https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f)
+- **What it does and why we kept it:** `EmptyState` displays a themed icon, title, and centered message inside a `VivariCard`. Its title, message, and icon can be supplied by the screen, which lets empty views explain what is missing while keeping the same layout.
+
+#### `lib/widgets/summary_card.dart`
+
+- **Commit:** [7dbb54c](https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f)
+- **What it does and why we kept it:** `SummaryCard` displays an uppercase label and a value, using numeric display text styling when the value parses as a number and title styling otherwise. It also accepts an optional tap callback, so the same component works for both informational summaries and tappable summaries.
+
+#### `lib/widgets/vivari_add_button.dart`
+
+- **Commit:** [ea0ac62](https://github.com/vvnrzn/Vivari/commit/ea0ac621189cd2779470ef8661fa7fd3014df29e)
+- **What it does and why we kept it:** `VivariAddButton` is a rounded floating action button with a plus icon, tooltip, and required press callback. Reusing it gives screens a consistent way to start an add or create action while preserving an accessible tooltip.
+
+#### `lib/widgets/vivari_bottom_navigation.dart`
+
+- **Commit:** [7dbb54c](https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f)
+- **What it does and why we kept it:** `VivariBottomNavigation` shows the Parameters, Home, and Care destinations, highlights the current index, and calls back with the selected destination. It animates the selected background, icon, and scale, giving navigation consistent feedback wherever it is used.
+
+#### `lib/widgets/vivari_card.dart`
+
+- **Commit:** [7dbb54c](https://github.com/vvnrzn/Vivari/commit/7dbb54ce0ecb2e5ad26827846021b852627e323f)
+- **What it does and why we kept it:** `VivariCard` wraps caller-provided content in the app’s themed `Card` and supports configurable padding. It lets screens use the shared card appearance while choosing the interior spacing appropriate to their content.
