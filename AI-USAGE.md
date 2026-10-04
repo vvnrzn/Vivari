@@ -30,19 +30,19 @@
 - **What I kept, what I changed, and why:** I kept the primary logging flow, date/time picking, and cross-screen state updates because the data propagation to the charts and Care history functioned smoothly. However, I made several UI and logic refinements to clean up the user experience. I removed redundant action buttons (such as the extraneous "Done" button when "Log Parameter" already submitted the form) to reduce visual clutter, added missing parameter units next to raw numbers on the main Parameters page for visual clarity, and filtered the parameter dropdown in the Log Parameters screen so it strictly displays parameters currently toggled ON in the settings.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/a03ed00093cf9847636f291af0b628d77c61f480
 
-### Home Dashboard tests
+### 2026-10-04 Home Dashboard tests
 - **Tool:** Copilot
 - **What I asked for:**  I requested updates to the Home Dashboard widgets so that the last water change and dosing display relative dates (e.g., "Today" or "{no.} days ago") instead of full dates, accompanied by a smaller caption with an ellipsis rule for long names, a bullet separator, and the corresponding amount and unit on the right. I also asked to add a warning-colored pending task count badge to the left of the water type on aquarium cards that only appears when pending tasks exist (>0) and is completely omitted if zero, along with corresponding widget test coverage.
 - **What it gave back:**  Aside from the dashboard changes itself, The assistant implemented the dashboard logic and delivered modular widget test suites—specifically validating that latest activities show relative dates with compact details, that aquarium cards display a count-only pending badge when needed, and that the badge is successfully omitted when the pending count is zero.
 - **What I kept, what I changed, and why:** I kept the relative date formatting, conditional pending badge logic, and test cases because they provided a solid foundation for the dashboard update. However, I made several UI and state refinements: I ensured both lines of text align properly when data exists in the last water change/dosing views, prepended the tank name to the amount and unit, left-aligned this text block to eliminate awkward spacing for shorter names, matched the relative date font size to the "no tasks due today" label.
 - **Commit:**  https://github.com/vvnrzn/Vivari/commit/d0c53bfcd214f3bd751f1bb34ae16f0c022ab8d6
 
-### Add Inhabitant Catalog
+### 2026-10-04 Add Inhabitant Catalog
 - **Tool:**  Copilot
-- **What I asked for:**  begin creating the add inhabitant screen. enable smart keyword search. since theres no api for now, add a file of at least 20 records per inhabitant type, saltwater and freshwater (be sure to include GloFish Tetra and Betta Fish) in a Local Dataset json Mock File. in the add inhabitant cards it contains general name, scientific name (muted) and it has a badge like [water type][inhabitant type], no need to add their size. make the colors consistent on the apps theme. images are for hierarchy/format reference
+- **What I asked for:** Implement "Add Inhabitant" screen with smart keyword search. Since there is no API currently, create a local inhabitants.json mock file with at least 20 records per water type (saltwater and freshwater), explicitly including the GloFish Tetra and Betta Fish. The inhabitant cards should display the common name, muted scientific name, and a combined badge formatted as [Water Type][Inhabitant Type] (omitting size details).reference
 - **What it gave back:** Added an image-free catalog screen with smart search across common names, scientific names, and keywords, plus category filters and multi-select. Added inhabitants.json: 140 records, with 20 per water-type/category combination. Freshwater and saltwater catalogs include fish, inverts, and plants; saltwater also includes corals.
-- **What I kept, what I changed, and why:** the total number of added inhabitants should also reflect in the home dashboard
-- **Commit:** 
+- **What I kept, what I changed, and why:** I kept The core search filtering logic, category pill navigation, custom badge formatting, and the entire inhabitants.json local dataset structure, but I updated the state management so that adding or removing inhabitants dynamically recalculates and updates the global Total Inhabitants count on the Home Dashboard.
+- **Commit:** https://github.com/vvnrzn/Vivari/fd9d63c8ec2440887aac86480b12bea5fa592a1d
 
 ## 2. Where the AI got it wrong
 
@@ -60,11 +60,11 @@
 - **What I did instead:** I connected the chart to the saved parameter readings and added status and average calculations, and the graph with x-axis date labels. It now shows suitable dates along the bottom of the chart—for example, days of the week in Week view and dates or weekly intervals in Month view.
 - **Commit:** https://github.com/vvnrzn/Vivari/commit/b5157c580c1b2ae54e6c2e61a6ef99051d751761
 
-### Case 3 -
+### Case 3 - Fixing the Care tank filter
 
-- **What it gave me:** 
-- **What was wrong with it:** 
-- **What I did instead:** 
+- **What it gave me:** Copilot updated the Care screen’s aquarium filter to scroll horizontally and added a test for accessing additional tanks.
+- **What was wrong with it:** The filter still didn’t scroll reliably in the app, and the bottom of the pills was clipped. The visible scrollbar also wasn’t wanted.
+- **What I did instead:** I asked fixed the interaction and layout by adding horizontal drag and wheel scrolling, adjusted the filter’s height and padding to prevent clipping, and hid the scrollbar while keeping scrolling available. I verified the fix with widget tests.
 
 
 ## 3. Who wrote what
