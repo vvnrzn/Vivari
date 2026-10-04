@@ -17,7 +17,6 @@ class Aquarium {
     required this.volumeUnit,
     required this.createdAt,
     this.photoBytes,
-    this.pendingTasks = 0,
   });
 
   final String name;
@@ -26,5 +25,4 @@ class Aquarium {
   final String volumeUnit;
   final DateTime createdAt;
   final Uint8List? photoBytes;
-  final int pendingTasks;
 }

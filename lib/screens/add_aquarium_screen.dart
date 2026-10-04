@@ -67,7 +67,6 @@ class _AddAquariumScreenState extends State<AddAquariumScreen> {
         volumeUnit: _volumeUnit,
         createdAt: _createdAt,
         photoBytes: photoBytes,
-        pendingTasks: widget.initialAquarium?.pendingTasks ?? 0,
       ),
     );
   }

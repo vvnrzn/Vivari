@@ -17,6 +17,7 @@ class HomeDashboard extends StatefulWidget {
     required this.tasks,
     required this.activities,
     required this.onAquariumAdded,
+    this.taskCompletions = const [],
     this.onAquariumUpdated,
     this.onAquariumDeleted,
     super.key,
@@ -26,6 +27,7 @@ class HomeDashboard extends StatefulWidget {
   final List<Aquarium> aquariums;
   final List<CareTask> tasks;
   final List<CareActivity> activities;
+  final List<CareTaskCompletion> taskCompletions;
   final ValueChanged<Aquarium> onAquariumAdded;
   final void Function(Aquarium previous, Aquarium updated)? onAquariumUpdated;
   final ValueChanged<Aquarium>? onAquariumDeleted;
@@ -72,6 +74,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
       (latest, activity) =>
           activity.loggedAt.isAfter(latest.loggedAt) ? activity : latest,
     );
+  }
+
+  int _pendingTaskCount(Aquarium aquarium) {
+    return widget.tasks.where((task) {
+      if (!task.isAssociatedWithAquarium(aquarium.name)) return false;
+      if (task.recurrence != TaskRecurrence.none) return true;
+      return !widget.taskCompletions.any(
+        (completion) =>
+            identical(completion.task, task) &&
+            DateUtils.isSameDay(completion.scheduledDate, task.dueAt),
+      );
+    }).length;
   }
 
   @override
@@ -235,6 +249,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 padding: const EdgeInsets.only(bottom: AppSpacing.small),
                 child: _AquariumCard(
                   aquarium: aquarium,
+                  pendingTaskCount: _pendingTaskCount(aquarium),
                   onTap: () => _openAquarium(context, aquarium),
                 ),
               ),
@@ -285,9 +300,14 @@ class _VivariBubbleMarkPainter extends CustomPainter {
 }
 
 class _AquariumCard extends StatelessWidget {
-  const _AquariumCard({required this.aquarium, required this.onTap});
+  const _AquariumCard({
+    required this.aquarium,
+    required this.pendingTaskCount,
+    required this.onTap,
+  });
 
   final Aquarium aquarium;
+  final int pendingTaskCount;
   final VoidCallback onTap;
 
   @override
@@ -383,9 +403,10 @@ class _AquariumCard extends StatelessWidget {
                         '${_formatVolume(aquarium.volume)} ${aquarium.volumeUnit}',
                   ),
                   const Spacer(),
-                  if (aquarium.pendingTasks > 0) ...[
+                  if (pendingTaskCount > 0) ...[
                     _Badge(
-                      label: '${aquarium.pendingTasks}',
+                      key: const ValueKey('pending-task-badge'),
+                      label: '$pendingTaskCount',
                       color: VivariColors.warning,
                     ),
                     const SizedBox(width: AppSpacing.small),
@@ -424,7 +445,7 @@ class _AquariumMetadata extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color});
+  const _Badge({super.key, required this.label, required this.color});
 
   final String label;
   final Color color;

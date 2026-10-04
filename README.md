@@ -110,7 +110,7 @@ lib/
 **Current limitations:**
 
 **Planned next steps:**
- Add persistent storage for aquariums and their photos.
+
 
 
 ## Security

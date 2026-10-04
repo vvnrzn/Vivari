@@ -60,23 +60,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('aquarium card shows a count-only pending badge when needed', (
-    tester,
-  ) async {
+  testWidgets('aquarium card counts associated scheduled tasks', (tester) async {
     final aquarium = Aquarium(
       name: 'Reef Tank',
       type: AquariumType.saltwater,
       volume: 40,
       volumeUnit: 'gal',
       createdAt: DateTime(2026),
-      pendingTasks: 3,
+    );
+    final otherAquariumTask = CareTask(
+      title: 'Feed fish',
+      category: 'Feeding',
+      aquariumName: 'Other Tank',
+      dueAt: DateTime.now().add(const Duration(days: 30)),
+    );
+    final aquariumTask = CareTask(
+      title: 'Check filter',
+      category: 'Maintenance',
+      aquariumName: 'Reef Tank',
+      dueAt: DateTime.now().add(const Duration(days: 30)),
+    );
+    final sharedAquariumTask = CareTask(
+      title: 'Test water',
+      category: 'Water testing',
+      aquariumName: 'Reef Tank',
+      aquariumNames: const ['Reef Tank', 'Other Tank'],
+      dueAt: DateTime.now().add(const Duration(days: 45)),
     );
     await tester.pumpWidget(
       MaterialApp(
         home: HomeDashboard(
           onSelectTab: (_) {},
           aquariums: [aquarium],
-          tasks: const [],
+          tasks: [otherAquariumTask, aquariumTask, sharedAquariumTask],
           activities: const [],
           onAquariumAdded: (_) {},
         ),
@@ -85,8 +101,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Saltwater'));
 
-    expect(find.text('3'), findsOneWidget);
-    expect(find.text('3 pending'), findsNothing);
+    final badge = find.byKey(const ValueKey('pending-task-badge'));
+    expect(badge, findsOneWidget);
+    expect(find.descendant(of: badge, matching: find.text('2')), findsOneWidget);
+    expect(find.text('2 pending'), findsNothing);
+    expect(tester.getTopLeft(badge).dx, lessThan(tester.getTopLeft(find.text('Saltwater')).dx));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('aquarium card omits the pending badge when the count is zero', (
@@ -113,7 +133,55 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Saltwater'));
 
-    expect(find.text('0'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-task-badge')), findsNothing);
     expect(find.text('Saltwater'), findsOneWidget);
+  });
+
+  testWidgets('completed one-off tasks are excluded from pending count', (
+    tester,
+  ) async {
+    final aquarium = Aquarium(
+      name: 'Reef Tank',
+      type: AquariumType.saltwater,
+      volume: 40,
+      volumeUnit: 'gal',
+      createdAt: DateTime(2026),
+    );
+    final completedTask = CareTask(
+      title: 'Clean glass',
+      category: 'Maintenance',
+      aquariumName: 'Reef Tank',
+      dueAt: DateTime(2026, 10, 5),
+    );
+    final pendingTask = CareTask(
+      title: 'Check filter',
+      category: 'Maintenance',
+      aquariumName: 'Reef Tank',
+      dueAt: DateTime(2026, 10, 6),
+      recurrence: TaskRecurrence.basic,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeDashboard(
+          onSelectTab: (_) {},
+          aquariums: [aquarium],
+          tasks: [completedTask, pendingTask],
+          taskCompletions: [
+            CareTaskCompletion(
+              task: completedTask,
+              scheduledDate: completedTask.dueAt,
+              completedAt: DateTime(2026, 10, 5),
+            ),
+          ],
+          activities: const [],
+          onAquariumAdded: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Saltwater'));
+
+    final badge = find.byKey(const ValueKey('pending-task-badge'));
+    expect(find.descendant(of: badge, matching: find.text('1')), findsOneWidget);
   });
 }

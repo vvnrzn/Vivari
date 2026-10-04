@@ -65,14 +65,18 @@ class _VivariShellState extends State<VivariShell> {
   }
 
   void _updateAquarium(Aquarium previous, Aquarium updated) {
-    final index = _aquariums.indexWhere((aquarium) => identical(aquarium, previous));
+    final index = _aquariums.indexWhere(
+      (aquarium) => identical(aquarium, previous),
+    );
     if (index == -1) return;
     setState(() => _aquariums[index] = updated);
     _dataChanges.update();
   }
 
   void _deleteAquarium(Aquarium aquarium) {
-    setState(() => _aquariums.removeWhere((entry) => identical(entry, aquarium)));
+    setState(
+      () => _aquariums.removeWhere((entry) => identical(entry, aquarium)),
+    );
     _dataChanges.update();
   }
 
@@ -136,6 +140,7 @@ class _VivariShellState extends State<VivariShell> {
               onSelectTab: _selectTab,
               aquariums: _aquariums,
               tasks: _tasks,
+              taskCompletions: _taskCompletions,
               activities: _activities,
               onAquariumAdded: _addAquarium,
               onAquariumUpdated: _updateAquarium,
