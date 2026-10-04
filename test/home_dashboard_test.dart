@@ -2,10 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:final_project/models/aquarium.dart';
 import 'package:final_project/models/care_record.dart';
+import 'package:final_project/models/inhabitant.dart';
 import 'package:final_project/screens/care_screen.dart';
 import 'package:final_project/screens/home_dashboard.dart';
 
 void main() {
+  testWidgets('total inhabitants sums quantities across aquariums', (
+    tester,
+  ) async {
+    const betta = AquariumInhabitant(
+      entry: InhabitantCatalogEntry(
+        id: 'betta',
+        commonName: 'Betta Fish',
+        scientificName: 'Betta splendens',
+        waterType: AquariumType.freshwater,
+        category: InhabitantCategory.fish,
+      ),
+      quantity: 3,
+    );
+    const plant = AquariumInhabitant(
+      entry: InhabitantCatalogEntry(
+        id: 'anubias',
+        commonName: 'Anubias',
+        scientificName: 'Anubias barteri',
+        waterType: AquariumType.freshwater,
+        category: InhabitantCategory.plants,
+      ),
+      quantity: 2,
+    );
+    final aquariums = [
+      Aquarium(
+        name: 'Community Tank',
+        type: AquariumType.freshwater,
+        volume: 40,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+        inhabitants: const [betta],
+      ),
+      Aquarium(
+        name: 'Planted Tank',
+        type: AquariumType.freshwater,
+        volume: 20,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+        inhabitants: const [plant],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeDashboard(
+          onSelectTab: (_) {},
+          aquariums: aquariums,
+          tasks: const [],
+          activities: const [],
+          onAquariumAdded: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('5'), findsOneWidget);
+  });
+
   testWidgets('latest activity shows a relative date and compact details', (
     tester,
   ) async {

@@ -39,6 +39,16 @@ class HomeDashboard extends StatefulWidget {
 }
 
 class _HomeDashboardState extends State<HomeDashboard> {
+  int get _totalInhabitants => widget.aquariums.fold(
+    0,
+    (total, aquarium) =>
+        total +
+        aquarium.inhabitants.fold(
+          0,
+          (aquariumTotal, inhabitant) => aquariumTotal + inhabitant.quantity,
+        ),
+  );
+
   Future<void> _addAquarium(BuildContext context) async {
     final aquarium = await Navigator.push<Aquarium>(
       context,
@@ -144,8 +154,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 ),
               ),
               const SizedBox(width: AppSpacing.medium),
-              const Expanded(
-                child: SummaryCard(label: 'Total Inhabitants', value: '0'),
+              Expanded(
+                child: SummaryCard(
+                  label: 'Total Inhabitants',
+                  value: '$_totalInhabitants',
+                ),
               ),
             ],
           ),

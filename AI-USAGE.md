@@ -37,11 +37,11 @@
 - **What I kept, what I changed, and why:** I kept the relative date formatting, conditional pending badge logic, and test cases because they provided a solid foundation for the dashboard update. However, I made several UI and state refinements: I ensured both lines of text align properly when data exists in the last water change/dosing views, prepended the tank name to the amount and unit, left-aligned this text block to eliminate awkward spacing for shorter names, matched the relative date font size to the "no tasks due today" label.
 - **Commit:**  https://github.com/vvnrzn/Vivari/commit/d0c53bfcd214f3bd751f1bb34ae16f0c022ab8d6
 
-### -- 
-- **Tool:** 
-- **What I asked for:**
-- **What it gave back:** 
-- **What I kept, what I changed, and why:** 
+### Add Inhabitant Catalog
+- **Tool:**  Copilot
+- **What I asked for:**  begin creating the add inhabitant screen. enable smart keyword search. since theres no api for now, add a file of at least 20 records per inhabitant type, saltwater and freshwater (be sure to include GloFish Tetra and Betta Fish) in a Local Dataset json Mock File. in the add inhabitant cards it contains general name, scientific name (muted) and it has a badge like [water type][inhabitant type], no need to add their size. make the colors consistent on the apps theme. images are for hierarchy/format reference
+- **What it gave back:** Added an image-free catalog screen with smart search across common names, scientific names, and keywords, plus category filters and multi-select. Added inhabitants.json: 140 records, with 20 per water-type/category combination. Freshwater and saltwater catalogs include fish, inverts, and plants; saltwater also includes corals.
+- **What I kept, what I changed, and why:** the total number of added inhabitants should also reflect in the home dashboard
 - **Commit:** 
 
 ## 2. Where the AI got it wrong
