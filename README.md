@@ -14,7 +14,13 @@ The specific SDK versions used to build the app are **Flutter 3.47.2** and **Dar
 To run the project:
 
 1. Install Flutter and ensure the Flutter toolchain is on your `PATH`.
-2. Clone the repository and open its folder in VS Code or a terminal.
+2. Clone the repository and move into its folder:
+
+```bash
+git clone https://github.com/vvnrzn/Vivari.git
+cd Vivari
+```
+
 3. Install the project dependencies:
 
 ```bash
@@ -108,19 +114,44 @@ lib/
 
 ## 6. Screenshots
 
-| HOME DASHBOARD | ADD AQUARIUM | CARE |
+| Area | Screen | Screenshot |
 | --- | --- | --- |
-| ![HOME](docs/assets/HOME-Dashboard.PNG) | ![Add Aquarium](docs/assets/Add-aquarium.PNG) | ![CARE](docs/assets/CARE.PNG) |
-
+| Home | Dashboard | ![Home dashboard](docs/assets/SCREENS/HOME-DASHBOARD.PNG) |
+| Aquarium management | Aquarium details | ![Aquarium details](docs/assets/SCREENS/AQUARIUM-DETAILS.PNG) |
+| Aquarium management | Add aquarium | ![Add aquarium](docs/assets/SCREENS/ADD-AQUARIUM.PNG) |
+| Aquarium management | Edit aquarium | ![Edit aquarium](docs/assets/SCREENS/EDIT-AQUARIUM.PNG) |
+| Aquarium management | Add inhabitant | ![Add inhabitant](docs/assets/SCREENS/ADD-INHABITANT.PNG) |
+| Parameters | Parameter overview | ![Parameters](docs/assets/SCREENS/PARAMETERS.PNG) |
+| Parameters | Add parameter reading | ![Add parameter](docs/assets/SCREENS/ADD-PARAMETER.PNG) |
+| Parameters | Parameter details and chart | ![Parameter details](docs/assets/SCREENS/PARAMETER-DETAILS.PNG) |
+| Parameters | Parameter settings | ![Parameter settings](docs/assets/SCREENS/PARAMETER-SETTINGS.PNG) |
+| Care | Care overview | ![Care](docs/assets/SCREENS/CARE.PNG) |
+| Care | Add task | ![Add task](docs/assets/SCREENS/ADD-TASK.PNG) |
+| Care | Log activity | ![Log activity](docs/assets/SCREENS/LOG-ACTIVITY.PNG) |
 
 
 ## 7. Known issues and next steps
 
 **Current limitations:**
 
+* Aquarium, care-task, and water-reading data is held in memory and is lost when the app is closed or restarted.
+* The inhabitant search uses the bundled local catalog; it does not yet fetch species suggestions from an external database or API.
+* Parameter charts currently offer Week and Month views. A custom date range from the proposal is not available yet.
+* Maintenance notifications are not implemented. The proposal expects local notifications to require a supported device, so web support will need a fallback.
+
 **Planned next steps:**
 
+* Add local data persistence so aquarium records, tasks, and water readings remain available between app sessions.
+* Complete the proposal's stretch goals:
+* Add a custom date range to the existing water-parameter charts, alongside Week and Month views.
+* Explore an external fish-species API for smart search while keeping the local catalog/manual entry as a fallback; verify that the service works on web.
+* Add local reminders for upcoming or overdue aquarium-care tasks and test them on a supported device.
 
+## CREDITS
+
+* **Packages:** See [`pubspec.yaml`](pubspec.yaml).
+* **Fonts:** Space Grotesk, DM Sans, and DM Mono via [Google Fonts](https://fonts.google.com/), licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/open-font-license-official-text/).
+* **Icons:** Material Icons by Google, licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Security
 
