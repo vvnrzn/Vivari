@@ -1,6 +1,5 @@
 # Security and privacy
 
-This repository is public. I have filled this in honestly and dated it.
 
 **Last checked:** 2026-10-09
 
