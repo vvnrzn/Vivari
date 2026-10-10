@@ -137,7 +137,7 @@ lib/
 * Aquarium, care-task, and water-reading data is held in memory and is lost when the app is closed or restarted.
 * The inhabitant search uses the bundled local catalog; it does not yet fetch species suggestions from an external database or API.
 * Parameter charts currently offer Week and Month views. A custom date range from the proposal is not available yet.
-* Maintenance notifications are not implemented. The proposal expects local notifications to require a supported device, so web support will need a fallback.
+
 
 **Planned next steps:**
 
@@ -155,7 +155,7 @@ lib/
 
 ## Security
 
-See [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md) for the project's security revieW.
+See [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md) for the project's security review.
 ## AI usage
 
 ![Built with AI assistance](https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff)
