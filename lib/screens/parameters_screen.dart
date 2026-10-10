@@ -26,6 +26,8 @@ class WaterParameter {
     required this.enabled,
     required this.freshwaterRange,
     required this.saltwaterRange,
+    this.aquariumRanges = const {},
+    this.allWaterTypeRanges = const {},
   });
 
   final String id;
@@ -34,16 +36,25 @@ class WaterParameter {
   final bool enabled;
   final ParameterRange freshwaterRange;
   final ParameterRange saltwaterRange;
+  final Map<String, ParameterRange> aquariumRanges;
+  final Map<AquariumType, ParameterRange> allWaterTypeRanges;
 
   ParameterRange rangeFor(AquariumType type) => switch (type) {
     AquariumType.freshwater => freshwaterRange,
     AquariumType.saltwater => saltwaterRange,
   };
 
+  ParameterRange rangeForAquarium(Aquarium aquarium) =>
+      aquariumRanges[aquarium.name] ??
+      allWaterTypeRanges[aquarium.type] ??
+      rangeFor(aquarium.type);
+
   WaterParameter copyWith({
     bool? enabled,
     ParameterRange? freshwaterRange,
     ParameterRange? saltwaterRange,
+    Map<String, ParameterRange>? aquariumRanges,
+    Map<AquariumType, ParameterRange>? allWaterTypeRanges,
   }) => WaterParameter(
     id: id,
     name: name,
@@ -51,6 +62,8 @@ class WaterParameter {
     enabled: enabled ?? this.enabled,
     freshwaterRange: freshwaterRange ?? this.freshwaterRange,
     saltwaterRange: saltwaterRange ?? this.saltwaterRange,
+    aquariumRanges: aquariumRanges ?? this.aquariumRanges,
+    allWaterTypeRanges: allWaterTypeRanges ?? this.allWaterTypeRanges,
   );
 }
 
@@ -821,7 +834,9 @@ class _ParameterListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final range = aquarium == null ? null : parameter.rangeFor(aquarium!.type);
+    final range = aquarium == null
+        ? null
+        : parameter.rangeForAquarium(aquarium!);
     final status = range == null
         ? ParameterStatus.noReading
         : _statusForReading(reading, range);
@@ -987,7 +1002,9 @@ class _ParameterDetailsScreenState extends State<ParameterDetailsScreen> {
   Widget build(BuildContext context) {
     final parameter = widget.parameter;
     final aquarium = widget.aquarium;
-    final range = aquarium == null ? null : parameter.rangeFor(aquarium.type);
+    final range = aquarium == null
+        ? null
+        : parameter.rangeForAquarium(aquarium);
     final readings =
         widget.readings
             .where(
@@ -1064,9 +1081,14 @@ class _ParameterDetailsScreenState extends State<ParameterDetailsScreen> {
                   latestReading == null
                       ? '—'
                       : _formatNumber(latestReading.value),
+                  key: const ValueKey('parameter-detail-latest-value'),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                     color: _statusColor(status),
-                    fontSize: 21,
+                    fontSize: 30,
                   ),
                 ),
               ],
@@ -1495,32 +1517,66 @@ class _ParameterSettingsState extends State<_ParameterSettings> {
     return null;
   }
 
-  void _close() => Navigator.of(
+  void _cancel() => Navigator.of(context).pop();
+
+  void _save() => Navigator.of(
     context,
   ).pop(_ParameterSettingsResult(_parameters, _selectedAquariumName));
 
   Future<void> _editRange(int index) async {
     final parameter = _parameters[index];
-    final range = parameter.rangeFor(_rangeType);
+    final aquarium = _selectedAquarium;
+    final range = aquarium == null
+        ? parameter.rangeFor(_rangeType)
+        : parameter.rangeForAquarium(aquarium);
     final updated = await showDialog<_RangeEditorResult>(
       context: context,
       builder: (_) => _RangeEditorDialog(
         parameter: parameter,
         initialRange: range,
         aquariumType: _rangeType,
-        showWaterTypeSelector: _selectedAquarium == null,
+        showWaterTypeSelector: aquarium == null,
+        showApplyToAllTanks: aquarium != null,
+        applyToAllTanks: aquarium == null
+            ? false
+            : !parameter.aquariumRanges.containsKey(aquarium.name) &&
+                  parameter.allWaterTypeRanges.containsKey(aquarium.type),
       ),
     );
     if (updated == null || !mounted) return;
     setState(() {
-      _parameters[index] = switch (updated.type) {
-        AquariumType.freshwater => parameter.copyWith(
-          freshwaterRange: updated.range,
-        ),
-        AquariumType.saltwater => parameter.copyWith(
-          saltwaterRange: updated.range,
-        ),
-      };
+      if (updated.applyToAllTanks) {
+        final rangesForOtherTanks =
+            Map<String, ParameterRange>.of(parameter.aquariumRanges)
+              ..removeWhere(
+                (name, _) => widget.aquariums.any(
+                  (tank) => tank.name == name && tank.type == aquarium!.type,
+                ),
+              );
+        _parameters[index] = parameter.copyWith(
+          aquariumRanges: rangesForOtherTanks,
+          allWaterTypeRanges: {
+            ...parameter.allWaterTypeRanges,
+            aquarium!.type: updated.range,
+          },
+        );
+      } else if (aquarium != null) {
+        _parameters[index] = parameter.copyWith(
+          aquariumRanges: {
+            ...parameter.aquariumRanges,
+            aquarium.name: updated.range,
+          },
+        );
+      } else {
+        _parameters[index] = switch (updated.type) {
+          AquariumType.freshwater => parameter.copyWith(
+            freshwaterRange: updated.range,
+          ),
+          AquariumType.saltwater => parameter.copyWith(
+            saltwaterRange: updated.range,
+          ),
+        };
+      }
     });
   }
 
@@ -1548,7 +1604,7 @@ class _ParameterSettingsState extends State<_ParameterSettings> {
             ),
             IconButton(
               tooltip: 'Close settings',
-              onPressed: _close,
+              onPressed: _cancel,
               icon: const Icon(Icons.close_rounded),
             ),
           ],
@@ -1581,7 +1637,9 @@ class _ParameterSettingsState extends State<_ParameterSettings> {
               key: ValueKey(parameter.id),
               index: index,
               parameter: parameter,
-              aquariumType: _rangeType,
+              range: _selectedAquarium == null
+                  ? parameter.rangeFor(_rangeType)
+                  : parameter.rangeForAquarium(_selectedAquarium!),
               onEditRange: () => _editRange(index),
               onEnabledChanged: (enabled) => setState(
                 () => _parameters[index] = parameter.copyWith(enabled: enabled),
@@ -1596,7 +1654,7 @@ class _ParameterSettingsState extends State<_ParameterSettings> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: SizedBox(
             width: double.infinity,
-            child: FilledButton(onPressed: _close, child: const Text('Done')),
+            child: FilledButton(onPressed: _save, child: const Text('Done')),
           ),
         ),
       ),
@@ -1609,20 +1667,19 @@ class _SettingsParameterCard extends StatelessWidget {
     required super.key,
     required this.index,
     required this.parameter,
-    required this.aquariumType,
+    required this.range,
     required this.onEditRange,
     required this.onEnabledChanged,
   });
 
   final int index;
   final WaterParameter parameter;
-  final AquariumType aquariumType;
+  final ParameterRange range;
   final VoidCallback onEditRange;
   final ValueChanged<bool> onEnabledChanged;
 
   @override
   Widget build(BuildContext context) {
-    final range = parameter.rangeFor(aquariumType);
     final unit = parameter.unit.isEmpty ? '' : parameter.unit;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1712,10 +1769,11 @@ class _SettingsParameterCard extends StatelessWidget {
 }
 
 class _RangeEditorResult {
-  const _RangeEditorResult(this.type, this.range);
+  const _RangeEditorResult(this.type, this.range, this.applyToAllTanks);
 
   final AquariumType type;
   final ParameterRange range;
+  final bool applyToAllTanks;
 }
 
 class _RangeEditorDialog extends StatefulWidget {
@@ -1724,12 +1782,16 @@ class _RangeEditorDialog extends StatefulWidget {
     required this.initialRange,
     required this.aquariumType,
     required this.showWaterTypeSelector,
+    required this.showApplyToAllTanks,
+    required this.applyToAllTanks,
   });
 
   final WaterParameter parameter;
   final ParameterRange initialRange;
   final AquariumType aquariumType;
   final bool showWaterTypeSelector;
+  final bool showApplyToAllTanks;
+  final bool applyToAllTanks;
 
   @override
   State<_RangeEditorDialog> createState() => _RangeEditorDialogState();
@@ -1739,12 +1801,14 @@ class _RangeEditorDialogState extends State<_RangeEditorDialog> {
   late final TextEditingController _minimumController;
   late final TextEditingController _maximumController;
   late AquariumType _aquariumType;
+  late bool _applyToAllTanks;
   String? _validationError;
 
   @override
   void initState() {
     super.initState();
     _aquariumType = widget.aquariumType;
+    _applyToAllTanks = widget.applyToAllTanks;
     _minimumController = TextEditingController(
       text: _formatNumber(widget.initialRange.minimum),
     );
@@ -1771,9 +1835,13 @@ class _RangeEditorDialogState extends State<_RangeEditorDialog> {
       setState(() => _validationError = 'Enter a minimum below the maximum.');
       return;
     }
-    Navigator.of(
-      context,
-    ).pop(_RangeEditorResult(_aquariumType, ParameterRange(minimum, maximum)));
+    Navigator.of(context).pop(
+      _RangeEditorResult(
+        _aquariumType,
+        ParameterRange(minimum, maximum),
+        _applyToAllTanks,
+      ),
+    );
   }
 
   @override
@@ -1833,6 +1901,18 @@ class _RangeEditorDialogState extends State<_RangeEditorDialog> {
               ),
             ],
           ),
+          if (widget.showApplyToAllTanks) ...[
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Apply to all tanks'),
+              value: _applyToAllTanks,
+              onChanged: (value) =>
+                  setState(() => _applyToAllTanks = value ?? false),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+            ),
+          ],
           if (_validationError != null) ...[
             const SizedBox(height: 8),
             Text(

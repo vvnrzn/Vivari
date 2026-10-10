@@ -238,6 +238,15 @@ void main() {
     expect(find.text('STATUS'), findsOneWidget);
     expect(find.text('AVERAGE'), findsOneWidget);
     expect(find.text('OPTIMAL'), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('parameter-detail-latest-value')),
+          )
+          .style
+          ?.fontSize,
+      30,
+    );
 
     await tester.tap(find.text('Month'));
     await tester.pumpAndSettle();
@@ -280,5 +289,97 @@ void main() {
     final savedInputs = find.byType(TextField);
     expect(tester.widget<TextField>(savedInputs.at(0)).controller?.text, '70');
     expect(tester.widget<TextField>(savedInputs.at(1)).controller?.text, '83');
+  });
+
+  testWidgets('closing settings discards changes until Done is pressed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: ParametersScreen()));
+    await tester.tap(find.byTooltip('Parameter Settings'));
+    await tester.pumpAndSettle();
+
+    final temperatureSwitch = find.byKey(
+      const ValueKey('parameter-enabled-temperature'),
+    );
+    await tester.tap(temperatureSwitch);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Close settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Parameter Settings'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(temperatureSwitch).value, isTrue);
+  });
+
+  testWidgets('custom ranges apply to one tank or all tanks as selected', (
+    tester,
+  ) async {
+    final aquariums = [
+      Aquarium(
+        name: 'Tank A',
+        type: AquariumType.freshwater,
+        volume: 40,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+      ),
+      Aquarium(
+        name: 'Tank B',
+        type: AquariumType.freshwater,
+        volume: 40,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+      ),
+      Aquarium(
+        name: 'Tank C',
+        type: AquariumType.saltwater,
+        volume: 40,
+        volumeUnit: 'gal',
+        createdAt: DateTime(2026),
+      ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(home: ParametersScreen(aquariums: aquariums)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Parameter Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Customize Temperature range'));
+    await tester.pumpAndSettle();
+    var inputs = find.byType(TextField);
+    await tester.enterText(inputs.at(0), '30');
+    await tester.enterText(inputs.at(1), '35');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('30–35°C'), findsOneWidget);
+    await tester.tap(find.text('Tank B').first);
+    await tester.pumpAndSettle();
+    expect(find.text('22–28°C'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Parameter Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Customize Temperature range'));
+    await tester.pumpAndSettle();
+    inputs = find.byType(TextField);
+    await tester.enterText(inputs.at(0), '31');
+    await tester.enterText(inputs.at(1), '36');
+    await tester.tap(find.text('Apply to all tanks'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('31–36°C'), findsOneWidget);
+    await tester.tap(find.text('Tank A').first);
+    await tester.pumpAndSettle();
+    expect(find.text('31–36°C'), findsOneWidget);
+
+    await tester.tap(find.text('Tank C').first);
+    await tester.pumpAndSettle();
+    expect(find.text('24–27°C'), findsOneWidget);
   });
 }

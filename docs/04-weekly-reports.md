@@ -1,42 +1,5 @@
 # Weekly reports
 
-One entry per week, newest at the top, written **during** that week. Five minutes
-each. They are the record of how the project actually went, and they make your
-final reflection almost write itself.
-
-Copy this block:
-
----
-
-## Week 4 (October 6 to October 9)
-
-**Done this week**
-- Improved the global aquarium state flow so total inhabitants are recalculated correctly when inhabitants are added, edited, or removed.
-- Finished the pending task badge workflow on aquarium cards and linked it to the Care screen for faster task awareness.
-- Continued refining the aquarium details experience and dashboard logic to better reflect real aquarium status.
-- Updated the project proposal, README, and security/privacy documentation to match the current app scope and implementation status.
-- Added supporting AI usage and project documentation updates to keep the development trail clear for final review.
-
-**In progress**
-- Finalizing the remaining polish for the aquarium details, care, and summary screens.
-- Checking where the app still depends on mock or in-memory data before the next persistence work.
-
-**Blocked or stuck on**
-- Local persistence is still not implemented, so aquarium, inhabitant, and task data are still lost when the app restarts.
-- Some stretch features, such as custom parameter date ranges and external species lookups, are still deferred.
-
-**Decisions made, and why**
-- Kept improvements focused on state accuracy and user-facing task awareness so the dashboard reflects real app status instead of placeholder values.
-- Updated the docs and proposal alongside the product changes so the final project record matches the actual implementation.
-- Prioritized usability fixes over broad feature expansion while the app still lacks persistent storage.
-
-**Hours spent, roughly:** 8-12 hours
-
-**Next week I will:**
-- Finalize the remaining aquarium detail and dashboard refinements.
-- Continue tightening the data lifecycle and state consistency across screens.
-- Move toward persistence and the next round of app-level QA and documentation cleanup.
-
 ---
 
 ## Week 3 (September 28 to October 5)
@@ -68,7 +31,7 @@ Copy this block:
 **Next week I will:**
 - Finish the remaining aquarium details and dashboard polish.
 - Tighten state consistency around tasks and summaries.
-- Continue building toward persistence, final QA, and documentation updates.
+- Continue documentation updates.
 
 ---
 
