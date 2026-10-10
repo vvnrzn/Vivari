@@ -151,12 +151,11 @@ lib/
 
 * **Packages:** See [`pubspec.yaml`](pubspec.yaml).
 * **Fonts:** Space Grotesk, DM Sans, and DM Mono via [Google Fonts](https://fonts.google.com/), licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/open-font-license-official-text/).
-* **Icons:** Material Icons by Google, licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+* **Icons:** Flutter's built-in Material Icons (enabled with `uses-material-design: true`), designed by Google and licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Security
 
-See [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md) for the project's security review, including client configuration, GitHub Actions, and the server-side Spoonacular key.
-
+See [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md) for the project's security revieW.
 ## AI usage
 
 ![Built with AI assistance](https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff)
