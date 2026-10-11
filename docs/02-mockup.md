@@ -7,9 +7,9 @@ main aquarium-care screens.
 
 ## Mockup
 
-[Open the full mockup image](assets/PROJECT/MOCKUP.png).
+[Open the full mockup image](assets/PROJECT/mockup.png).
 
-![Vivari aquarium management app mockup](assets/PROJECT/MOCKUP.png)
+![Vivari aquarium management app mockup](assets/PROJECT/mockup.png)
 
 The mockup presents four primary views:
 
