@@ -1,6 +1,7 @@
 # Vivari
 
 **Live Demo:** https://vvnrzn.github.io/Vivari/  
+**Demo Video:** [Watch the demo on Google Drive](https://drive.google.com/file/d/1IfHhQZUcDURqNcEPHEZOCV-cF34Sp3JX/view?usp=sharing) <br>
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University  
 **Author:** vvnrzn  
 
@@ -79,37 +80,57 @@ flutter run -d chrome
 ## 5. Project structure
 
 ```text
-assets/
-└── data/
-    └── inhabitants.json
-lib/
-├── main.dart
-├── data/
-│   └── inhabitant_catalog.dart
-├── models/
-│   ├── aquarium.dart
-│   ├── care_record.dart
-│   ├── inhabitant.dart
-│   └── water_reading.dart
-├── screens/
-│   ├── add_aquarium_screen.dart
-│   ├── add_inhabitant_screen.dart
-│   ├── add_task_screen.dart
-│   ├── aquarium_details_screen.dart
-│   ├── care_screen.dart
-│   ├── home_dashboard.dart
-│   ├── log_activity_screen.dart
-│   ├── parameters_screen.dart
-│   └── placeholder_screen.dart
-├── theme/
-│   └── app_theme.dart
-└── widgets/
-    ├── aquarium_multi_select_sheet.dart
-    ├── empty_state.dart
-    ├── summary_card.dart
-    ├── vivari_add_button.dart
-    ├── vivari_bottom_navigation.dart
-    └── vivari_card.dart
+.
+├── .github/
+├── assets/
+│   └── data/
+│       └── inhabitants.json
+├── docs/
+│   └── assets/
+│       └── SCREENS/
+├── lib/
+│   ├── data/
+│   │   └── inhabitant_catalog.dart
+│   ├── main.dart
+│   ├── models/
+│   │   ├── aquarium.dart
+│   │   ├── care_record.dart
+│   │   ├── inhabitant.dart
+│   │   └── water_reading.dart
+│   ├── screens/
+│   │   ├── add_aquarium_screen.dart
+│   │   ├── add_inhabitant_screen.dart
+│   │   ├── add_task_screen.dart
+│   │   ├── aquarium_details_screen.dart
+│   │   ├── care_screen.dart
+│   │   ├── home_dashboard.dart
+│   │   ├── log_activity_screen.dart
+│   │   └── parameters_screen.dart
+│   ├── theme/
+│   │   └── app_theme.dart
+│   └── widgets/
+│       ├── aquarium_multi_select_sheet.dart
+│       ├── empty_state.dart
+│       ├── summary_card.dart
+│       ├── vivari_add_button.dart
+│       ├── vivari_bottom_navigation.dart
+│       └── vivari_card.dart
+├── test/
+│   ├── aquarium_details_screen_test.dart
+│   ├── care_multi_aquarium_test.dart
+│   ├── home_dashboard_test.dart
+│   ├── parameters_screen_test.dart
+│   └── widget_test.dart
+├── AI-USAGE.md
+├── LICENSE
+├── README.md
+├── REPORT.md
+├── START-HERE.md
+├── analysis_options.yaml
+├── pubspec.lock
+├── pubspec.yaml
+├── security-checklist-template.md
+└── web/
 ```
 
 ## 6. Screenshots
